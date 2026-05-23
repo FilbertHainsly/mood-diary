@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "269728125034",
+    "project_id": "fp-mood-diary",
+    "storage_bucket": "fp-mood-diary.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:269728125034:android:26724efcea14dfb143ba13",
+        "android_client_info": {
+          "package_name": "com.example.mood_diary"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSABXhjB62UDMYpirxjrcvY06OliEDQgI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
