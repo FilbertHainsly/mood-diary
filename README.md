@@ -1,17 +1,13 @@
 # mood_diary
 
-A new Flutter project.
+##  Class Diagram
 
-## Getting Started
+<!-- Foto langsung tampil -->
+![Class Diagram](<img width="1022" height="910" alt="PPB drawio" src="https://github.com/user-attachments/assets/edf24662-4429-4e53-998e-eddc7883626a" />)
 
-This project is a starting point for a Flutter application.
+>  ([Link Diagram](https://drive.google.com/file/d/1qaYikw3Q80jyeQ_0Wjic_2kIu9O03UhY/view))  
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Penjelasan Singkat
+Class diagram ini menggambarkan struktur aplikasi Mood Diary yang terbagi menjadi:
+- **Model Classes**: User, DiaryEntry, ChatSession, Message, TrustedContact
+- **Service Classes**: AuthService, FirestoreService, EmotionApiService, GeminiApiService, NotificationService
