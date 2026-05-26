@@ -2,9 +2,7 @@
 
 ##  Class Diagram
 
-<!-- Foto langsung tampil -->
-![Class Diagram](<img width="1022" height="910" alt="PPB drawio" src="https://github.com/user-attachments/assets/edf24662-4429-4e53-998e-eddc7883626a" />)
-
+![Class Diagram](https://github.com/user-attachments/assets/edf24662-4429-4e53-998e-eddc7883626a)
 >  ([Link Diagram](https://drive.google.com/file/d/1qaYikw3Q80jyeQ_0Wjic_2kIu9O03UhY/view))  
 
 ### Penjelasan Singkat
