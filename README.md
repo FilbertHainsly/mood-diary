@@ -1,17 +1,109 @@
-# mood_diary
+# Mood Diary
 
-A new Flutter project.
+Aplikasi Flutter untuk mencatat diary harian sekaligus memprediksi mood penggunanya secara otomatis menggunakan model AI klasifikasi emosi Bahasa Indonesia. Dibuat sebagai Final Project mata kuliah **Pemrograman Perangkat Bergerak (PPB)**.
 
-## Getting Started
+## Fitur Utama
 
-This project is a starting point for a Flutter application.
+- **Autentikasi** — Register & login menggunakan Firebase Authentication (email + password).
+- **Tulis Diary** — Tulis catatan harian lewat form sederhana dengan validasi minimal karakter.
+- **Prediksi Mood Otomatis** — Teks diary dikirim ke model `StevenLimcorn/indonesian-roberta-base-emotion-classifier` di HuggingFace Inference API. Mendukung 6 mood: **Happy, Sad, Angry, Fear, Love, Neutral**.
+- **Fallback Predictor** — Jika API gagal / token belum diset, aplikasi otomatis fallback ke keyword-based predictor lokal sehingga tetap bisa didemonstrasikan.
+- **Riwayat Diary** — Semua entri tersimpan di Cloud Firestore per user dan dapat ditampilkan, di-edit, maupun dihapus.
+- **Tema Konsisten** — Palet tosca & soft orange dengan mapping warna + emoji untuk setiap mood.
 
-A few resources to get you started if this is your first Flutter project:
+## Tech Stack
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+| Kategori | Teknologi |
+| --- | --- |
+| Framework | Flutter (Dart SDK `>=3.0.0 <4.0.0`) |
+| State Management | `provider` ^6.1.2 |
+| Auth | `firebase_auth` ^4.17.8 |
+| Database | `cloud_firestore` ^4.15.8 |
+| HTTP Client | `http` ^1.2.1 |
+| AI / NLP | HuggingFace Inference API — RoBERTa fine-tuned Bahasa Indonesia |
+| Formatter | `intl` ^0.19.0 |
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Struktur Project
+
+```
+lib/
+├── main.dart                   # Entry point, AppTheme, AuthGate
+├── firebase_options.dart       # Konfigurasi Firebase (auto-generated)
+├── models/
+│   ├── diary_entry.dart        # Model entri diary (Firestore)
+│   ├── mood_result.dart        # Model hasil prediksi mood
+│   └── user_model.dart         # Model user
+├── screens/
+│   ├── login_screen.dart       # Halaman login
+│   ├── register_screen.dart    # Halaman registrasi
+│   ├── home_screen.dart        # Form tulis diary + analisis
+│   ├── result_screen.dart      # Hasil prediksi mood
+│   ├── history_screen.dart     # Riwayat diary
+│   └── edit_diary_screen.dart  # Edit entri diary
+└── services/
+    ├── auth_service.dart            # ChangeNotifier untuk auth
+    ├── firebase_auth_service.dart   # Wrapper Firebase Auth
+    ├── diary_service.dart           # ChangeNotifier untuk diary
+    ├── firestore_service.dart       # CRUD Firestore
+    └── mood_api_service.dart        # Klien HuggingFace + fallback
+```
+
+## Persiapan & Setup
+
+### 1. Prasyarat
+
+- Flutter SDK `>=3.10.0`
+- Akun Firebase + project Firebase yang sudah dibuat
+- HuggingFace account untuk mendapatkan API token (opsional — ada fallback)
+
+### 2. Clone & Install Dependencies
+
+```bash
+git clone <repo-url>
+cd mood_diary
+flutter pub get
+```
+
+### 3. Konfigurasi Firebase
+
+Project sudah berisi `lib/firebase_options.dart` yang di-generate oleh FlutterFire CLI. Jika ingin pakai project Firebase Anda sendiri:
+
+```bash
+dart pub global activate flutterfire_cli
+flutterfire configure
+```
+
+Pastikan di Firebase Console:
+- **Authentication** → enable provider **Email/Password**.
+- **Cloud Firestore** → buat database (production / test mode).
+
+### 4. HuggingFace API Token
+
+Buka [lib/services/mood_api_service.dart](lib/services/mood_api_service.dart#L18) dan ganti nilai `_hfToken` dengan token milik Anda. Token bisa dibuat di https://huggingface.co/settings/tokens (cukup role **Read**).
+
+> Jika token tidak diset / request gagal, app otomatis pakai fallback keyword predictor.
+
+### 5. Jalankan App
+
+```bash
+flutter run
+```
+
+Pilih device target sesuai platform (Android emulator, iOS simulator, Chrome, Windows desktop, dst.). Project sudah disiapkan untuk Android, iOS, Web, Windows, macOS, dan Linux.
+
+## Alur Penggunaan
+
+1. **Login / Register** menggunakan email & password.
+2. Pada **Home**, tulis catatan harian (minimal 10 karakter) lalu tekan tombol analisis.
+3. Teks dikirim ke HuggingFace API → label emosi dipetakan ke salah satu mood, lalu disimpan ke Firestore beserta `confidence`.
+4. Hasil prediksi ditampilkan di **Result Screen** lengkap dengan warna & emoji mood.
+5. Buka **History** untuk melihat seluruh entri, mengedit teks, atau menghapus entri.
+
+## Catatan Keamanan
+
+- Token HuggingFace saat ini ter-hardcode di source code. Sebaiknya pindahkan ke variabel environment (mis. `--dart-define=HF_TOKEN=...`) sebelum di-publish atau dijadikan public repo.
+- Aturan Firestore default-nya restrictive — pastikan Anda meng-set rules yang membatasi akses tiap user hanya ke dokumennya sendiri (`request.auth.uid == resource.data.userId`).
+
+## Lisensi
+
+Project ini dibuat untuk keperluan akademik (Final Project PPB) dan tidak ditujukan untuk produksi.

@@ -2,10 +2,12 @@
 class MoodResult {
   final String mood;
   final double confidence;
+  final String recommendation;
 
   MoodResult({
     required this.mood,
     required this.confidence,
+    this.recommendation = '',
   });
 
   // Parsing JSON response dari API menjadi objek MoodResult.
@@ -16,6 +18,7 @@ class MoodResult {
       confidence: (json['confidence'] is num)
           ? (json['confidence'] as num).toDouble()
           : double.tryParse(json['confidence']?.toString() ?? '0') ?? 0.0,
+      recommendation: json['recommendation']?.toString() ?? '',
     );
   }
 }

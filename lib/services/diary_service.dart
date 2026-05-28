@@ -45,6 +45,7 @@ class DiaryService extends ChangeNotifier {
         diaryText: diaryText,
         mood: result.mood,
         confidence: result.confidence,
+        recommendation: result.recommendation,
         createdAt: _lastAnalyzedAt!,
       );
       await _firestoreService.addDiary(entry);

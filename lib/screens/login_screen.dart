@@ -116,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Tulis perasaanmu, biarkan AI memahaminya 💚',
+                    'Tulis diarymu, biarkan AI membantu memahami moodmu',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,

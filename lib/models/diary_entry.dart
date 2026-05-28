@@ -7,6 +7,7 @@ class DiaryEntry {
   final String diaryText;
   final String mood;
   final double confidence;
+  final String recommendation;
   final DateTime createdAt;
 
   DiaryEntry({
@@ -16,6 +17,7 @@ class DiaryEntry {
     required this.mood,
     required this.confidence,
     required this.createdAt,
+    this.recommendation = '',
   });
 
   // Konversi ke Map untuk disimpan ke Firestore.
@@ -26,6 +28,7 @@ class DiaryEntry {
       'diaryText': diaryText,
       'mood': mood,
       'confidence': confidence,
+      'recommendation': recommendation,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -41,6 +44,7 @@ class DiaryEntry {
       confidence: (data['confidence'] is num)
           ? (data['confidence'] as num).toDouble()
           : 0.0,
+      recommendation: data['recommendation']?.toString() ?? '',
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
@@ -54,6 +58,7 @@ class DiaryEntry {
     String? diaryText,
     String? mood,
     double? confidence,
+    String? recommendation,
     DateTime? createdAt,
   }) {
     return DiaryEntry(
@@ -62,6 +67,7 @@ class DiaryEntry {
       diaryText: diaryText ?? this.diaryText,
       mood: mood ?? this.mood,
       confidence: confidence ?? this.confidence,
+      recommendation: recommendation ?? this.recommendation,
       createdAt: createdAt ?? this.createdAt,
     );
   }

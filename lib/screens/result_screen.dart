@@ -168,7 +168,56 @@ class ResultScreen extends StatelessWidget {
                   _MoodBadge(mood: result.mood),
                 ],
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+
+              if (result.recommendation.isNotEmpty) ...[
+                const Text(
+                  'Rekomendasi dari AI',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        moodColor.withOpacity(0.18),
+                        moodColor.withOpacity(0.04),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: moodColor.withOpacity(0.35)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.auto_awesome_rounded,
+                          size: 20, color: moodColor),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          result.recommendation,
+                          style: const TextStyle(
+                            fontSize: 14.5,
+                            height: 1.55,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+
+              const SizedBox(height: 8),
 
               SizedBox(
                 width: double.infinity,
@@ -186,7 +235,7 @@ class ResultScreen extends StatelessWidget {
                     );
                   },
                   icon: const Icon(Icons.check_circle_outline_rounded),
-                  label: const Text('Tersimpan ✓'),
+                  label: const Text('Save'),
                 ),
               ),
               const SizedBox(height: 12),

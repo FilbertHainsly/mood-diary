@@ -102,59 +102,46 @@ class AppTheme {
 
   // Mapping warna untuk berbagai mood (digunakan di UI).
   static Color moodColor(String mood) {
-    switch (mood.toLowerCase()) {
-      case 'happy':
-      case 'joy':
-      case 'senang':
-        return const Color(0xFFFFD166);
-      case 'sad':
-      case 'sedih':
-        return const Color(0xFF7B9EE0);
-      case 'angry':
-      case 'marah':
-        return const Color(0xFFEF6F6C);
-      case 'fear':
-      case 'takut':
-        return const Color(0xFF6DD3C0);
-      case 'love':
-      case 'cinta':
-        return const Color(0xFFFF8FA3);
-      case 'neutral':
-      case 'netral':
-        return const Color(0xFFB0BEC5);
-      default:
-        return primaryColor;
-    }
-  }
+  switch (mood.toLowerCase()) {
 
-  // Mapping emoji untuk berbagai mood.
-  static String moodEmoji(String mood) {
-    switch (mood.toLowerCase()) {
-      case 'happy':
-      case 'joy':
-      case 'senang':
-        return '😊';
-      case 'sad':
-      case 'sedih':
-        return '😢';
-      case 'angry':
-      case 'marah':
-        return '😠';
-      case 'fear':
-      case 'takut':
-        return '😨';
-      case 'love':
-      case 'cinta':
-        return '🥰';
-      case 'neutral':
-      case 'netral':
-        return '😐';
-      default:
-        return '🤔';
-    }
+    case 'positive':
+      return const Color(0xFFFFD166);
+
+    case 'depressed':
+      return const Color(0xFF7B9EE0);
+
+    case 'anxious':
+      return const Color(0xFF6DD3C0);
+
+    case 'stressed':
+      return const Color(0xFFEF6F6C);
+
+    case 'stable':
+      return const Color(0xFFB0BEC5);
+
+    default:
+      return primaryColor;
   }
 }
 
+// Emoji mapping mood
+  static String moodEmoji(String mood) {
+  switch (mood.toLowerCase()) {
+    case 'positive':
+      return '😊';
+    case 'depressed':
+      return '😔';
+    case 'anxious':
+      return '😰';
+    case 'stressed':
+      return '😫';
+    case 'stable':
+      return '😐';
+    default:
+      return '❓';
+    }
+  }
+}
 class MoodDiaryApp extends StatelessWidget {
   const MoodDiaryApp({super.key});
 

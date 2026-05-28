@@ -195,6 +195,37 @@ class HistoryScreen extends StatelessWidget {
                 style: const TextStyle(
                     fontSize: 15, height: 1.5, color: AppTheme.textPrimary),
               ),
+              if (diary.recommendation.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                const Text(
+                  '💡 Rekomendasi dari AI',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.moodColor(diary.mood).withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppTheme.moodColor(diary.mood).withOpacity(0.35),
+                    ),
+                  ),
+                  child: Text(
+                    diary.recommendation,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.5,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
