@@ -1,27 +1,6 @@
 # Mood Diary
 
-Aplikasi Flutter untuk mencatat diary harian sekaligus memprediksi mood penggunanya secara otomatis menggunakan model AI klasifikasi emosi Bahasa Indonesia. Dibuat sebagai Final Project mata kuliah **Pemrograman Perangkat Bergerak (PPB)**.
-
-## Fitur Utama
-
-- **Autentikasi** — Register & login menggunakan Firebase Authentication (email + password).
-- **Tulis Diary** — Tulis catatan harian lewat form sederhana dengan validasi minimal karakter.
-- **Prediksi Mood Otomatis** — Teks diary dikirim ke model `StevenLimcorn/indonesian-roberta-base-emotion-classifier` di HuggingFace Inference API. Mendukung 6 mood: **Happy, Sad, Angry, Fear, Love, Neutral**.
-- **Fallback Predictor** — Jika API gagal / token belum diset, aplikasi otomatis fallback ke keyword-based predictor lokal sehingga tetap bisa didemonstrasikan.
-- **Riwayat Diary** — Semua entri tersimpan di Cloud Firestore per user dan dapat ditampilkan, di-edit, maupun dihapus.
-- **Tema Konsisten** — Palet tosca & soft orange dengan mapping warna + emoji untuk setiap mood.
-
-## Tech Stack
-
-| Kategori | Teknologi |
-| --- | --- |
-| Framework | Flutter (Dart SDK `>=3.0.0 <4.0.0`) |
-| State Management | `provider` ^6.1.2 |
-| Auth | `firebase_auth` ^4.17.8 |
-| Database | `cloud_firestore` ^4.15.8 |
-| HTTP Client | `http` ^1.2.1 |
-| AI / NLP | HuggingFace Inference API — RoBERTa fine-tuned Bahasa Indonesia |
-| Formatter | `intl` ^0.19.0 |
+Aplikasi Flutter untuk mencatat diary harian sekaligus memprediksi mood penggunanya secara otomatis menggunakan model gemini API. Dibuat sebagai Final Project mata kuliah **Pemrograman Perangkat Bergerak (PPB)**.
 
 ## Struktur Project
 
