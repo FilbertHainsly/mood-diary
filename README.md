@@ -1,6 +1,5 @@
 # Mood Diary
 
-<<<<<<< HEAD
 Aplikasi Flutter untuk mencatat diary harian sekaligus memprediksi mood penggunanya secara otomatis menggunakan model AI klasifikasi emosi Bahasa Indonesia. Dibuat sebagai Final Project mata kuliah **Pemrograman Perangkat Bergerak (PPB)**.
 
 ## Fitur Utama
