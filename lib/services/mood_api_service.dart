@@ -11,7 +11,7 @@ import '../models/mood_result.dart';
 class MoodApiService {
   // GANTI dengan Gemini API key milikmu.
   // Cara mendapatkan: https://aistudio.google.com/app/apikey
-  static const String _geminiApiKey = 'AIzaSyDPL9e51lnkYKphPksMMf4eSilweR5gLf8';
+  static const String _geminiApiKey = 'Your API Key';
 
   static const String _modelName = 'gemini-2.5-flash';
 
