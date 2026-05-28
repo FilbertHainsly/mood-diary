@@ -28,8 +28,8 @@ Aplikasi Flutter untuk mencatat diary harian sekaligus memprediksi mood pengguna
 
 ```
 lib/
-├── main.dart                   # Entry point, AppTheme, AuthGate
-├── firebase_options.dart       # Konfigurasi Firebase (auto-generated)
+├── main.dart                   
+├── firebase_options.dart      
 ├── models/
 │   ├── diary_entry.dart        # Model entri diary (Firestore)
 │   ├── mood_result.dart        # Model hasil prediksi mood
@@ -89,25 +89,6 @@ Buka [lib/services/mood_api_service.dart](lib/services/mood_api_service.dart#L18
 ```bash
 flutter run
 ```
-
-Pilih device target sesuai platform (Android emulator, iOS simulator, Chrome, Windows desktop, dst.). Project sudah disiapkan untuk Android, iOS, Web, Windows, macOS, dan Linux.
-
-## Alur Penggunaan
-
-1. **Login / Register** menggunakan email & password.
-2. Pada **Home**, tulis catatan harian (minimal 10 karakter) lalu tekan tombol analisis.
-3. Teks dikirim ke HuggingFace API → label emosi dipetakan ke salah satu mood, lalu disimpan ke Firestore beserta `confidence`.
-4. Hasil prediksi ditampilkan di **Result Screen** lengkap dengan warna & emoji mood.
-5. Buka **History** untuk melihat seluruh entri, mengedit teks, atau menghapus entri.
-
-## Catatan Keamanan
-
-- Token HuggingFace saat ini ter-hardcode di source code. Sebaiknya pindahkan ke variabel environment (mis. `--dart-define=HF_TOKEN=...`) sebelum di-publish atau dijadikan public repo.
-- Aturan Firestore default-nya restrictive — pastikan Anda meng-set rules yang membatasi akses tiap user hanya ke dokumennya sendiri (`request.auth.uid == resource.data.userId`).
-
-## Lisensi
-
-Project ini dibuat untuk keperluan akademik (Final Project PPB) dan tidak ditujukan untuk produksi.
 =======
 ##  Class Diagram
 
