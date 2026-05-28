@@ -1,5 +1,6 @@
 # Mood Diary
 
+<<<<<<< HEAD
 Aplikasi Flutter untuk mencatat diary harian sekaligus memprediksi mood penggunanya secara otomatis menggunakan model AI klasifikasi emosi Bahasa Indonesia. Dibuat sebagai Final Project mata kuliah **Pemrograman Perangkat Bergerak (PPB)**.
 
 ## Fitur Utama
@@ -107,3 +108,14 @@ Pilih device target sesuai platform (Android emulator, iOS simulator, Chrome, Wi
 ## Lisensi
 
 Project ini dibuat untuk keperluan akademik (Final Project PPB) dan tidak ditujukan untuk produksi.
+=======
+##  Class Diagram
+
+![Class Diagram](https://github.com/user-attachments/assets/edf24662-4429-4e53-998e-eddc7883626a)
+>  ([Link Diagram](https://drive.google.com/file/d/1qaYikw3Q80jyeQ_0Wjic_2kIu9O03UhY/view))  
+
+### Penjelasan Singkat
+Class diagram ini menggambarkan struktur aplikasi Mood Diary yang terbagi menjadi:
+- **Model Classes**: User, DiaryEntry, ChatSession, Message, TrustedContact
+- **Service Classes**: AuthService, FirestoreService, EmotionApiService, GeminiApiService, NotificationService
+>>>>>>> 5103f2314a7ce4a9ce2bbf52518d5c9d23934dba
