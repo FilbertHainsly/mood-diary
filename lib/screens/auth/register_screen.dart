@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-import '../main.dart';
-import '../services/auth_service.dart';
-import 'home_screen.dart';
+import '../../core/app_theme.dart';
+import '../../services/auth_service.dart';
+import '../home/home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});

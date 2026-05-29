@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
-import '../main.dart';
-import '../models/diary_entry.dart';
-import '../services/diary_service.dart';
+import '../../core/app_theme.dart';
+import '../../models/diary_entry.dart';
+import '../../services/diary_service.dart';
 
 // Screen untuk mengedit isi diary yang sudah ada.
 class EditDiaryScreen extends StatefulWidget {
@@ -51,7 +50,8 @@ class _EditDiaryScreenState extends State<EditDiaryScreen> {
 
     final success = await diaryService.updateDiary(
       id: widget.diary.id,
-      newText: newText,
+      title: widget.diary.title,
+      diaryText: newText,
     );
 
     if (!mounted) return;

@@ -5,7 +5,6 @@ import '../models/mood_result.dart';
 import 'firestore_service.dart';
 import 'mood_api_service.dart';
 
-// ChangeNotifier untuk fitur diary: analisis mood, simpan/update/hapus.
 class DiaryService extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
   final MoodApiService _moodApi = MoodApiService();
@@ -21,12 +20,18 @@ class DiaryService extends ChangeNotifier {
   bool get isAnalyzing => _isAnalyzing;
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
+
   MoodResult? get lastResult => _lastResult;
   String get lastDiaryText => _lastDiaryText;
   DateTime? get lastAnalyzedAt => _lastAnalyzedAt;
 
+  // =====================================================
+  // ANALYZE + SAVE DIARY
+  // =====================================================
+
   Future<bool> analyzeAndSave({
     required String userId,
+    required String title,
     required String diaryText,
   }) async {
     _isAnalyzing = true;
@@ -35,6 +40,7 @@ class DiaryService extends ChangeNotifier {
 
     try {
       final result = await _moodApi.predictMood(diaryText);
+
       _lastResult = result;
       _lastDiaryText = diaryText;
       _lastAnalyzedAt = DateTime.now();
@@ -42,50 +48,78 @@ class DiaryService extends ChangeNotifier {
       final entry = DiaryEntry(
         id: '',
         userId: userId,
+        title: title,
         diaryText: diaryText,
         mood: result.mood,
         confidence: result.confidence,
         recommendation: result.recommendation,
         createdAt: _lastAnalyzedAt!,
       );
+
       await _firestoreService.addDiary(entry);
 
       _isAnalyzing = false;
       notifyListeners();
+
       return true;
     } catch (e) {
       _errorMessage = e.toString();
+
       _isAnalyzing = false;
       notifyListeners();
+
       return false;
     }
   }
+
+  // =====================================================
+  // GET ALL DIARIES
+  // =====================================================
 
   Stream<List<DiaryEntry>> watchDiaries(String userId) {
     return _firestoreService.getDiaries(userId);
   }
 
+  // =====================================================
+  // UPDATE DIARY
+  // =====================================================
+
   Future<bool> updateDiary({
     required String id,
-    required String newText,
+    required String title,
+    required String diaryText,
   }) async {
     _isSaving = true;
+    _errorMessage = null;
+
     notifyListeners();
+
     try {
       await _firestoreService.updateDiary(
         id: id,
-        data: {'diaryText': newText},
+        data: {
+          'title': title,
+          'diaryText': diaryText,
+        },
       );
+
       _isSaving = false;
       notifyListeners();
+
       return true;
     } catch (e) {
       _errorMessage = e.toString();
+
       _isSaving = false;
       notifyListeners();
+
       return false;
     }
   }
+
+  // =====================================================
+  // DELETE DIARY
+  // =====================================================
 
   Future<bool> deleteDiary(String id) async {
     try {
@@ -94,7 +128,39 @@ class DiaryService extends ChangeNotifier {
     } catch (e) {
       _errorMessage = e.toString();
       notifyListeners();
+
       return false;
     }
+  }
+
+  // =====================================================
+  // SEARCH DIARY
+  // =====================================================
+
+  List<DiaryEntry> searchDiaries(
+    List<DiaryEntry> diaries,
+    String query,
+  ) {
+    if (query.trim().isEmpty) return diaries;
+
+    final keyword = query.toLowerCase();
+
+    return diaries.where((diary) {
+      return diary.title.toLowerCase().contains(keyword) ||
+          diary.diaryText.toLowerCase().contains(keyword) ||
+          diary.mood.toLowerCase().contains(keyword);
+    }).toList();
+  }
+
+  // =====================================================
+  // CLEAR LAST RESULT
+  // =====================================================
+
+  void clearLastResult() {
+    _lastResult = null;
+    _lastDiaryText = '';
+    _lastAnalyzedAt = null;
+
+    notifyListeners();
   }
 }

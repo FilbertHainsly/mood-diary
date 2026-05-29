@@ -1,14 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/diary_entry.dart';
 
-// Service untuk semua operasi CRUD pada collection "diaries" di Firestore.
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Referensi ke collection "diaries".
-  CollectionReference get _diariesRef => _firestore.collection('diaries');
+  CollectionReference get _diariesRef =>
+      _firestore.collection('diaries');
 
-  // Menambahkan diary baru. Mengembalikan ID dokumen yang baru dibuat.
+  // =====================================================
+  // CREATE
+  // =====================================================
+
   Future<String> addDiary(DiaryEntry entry) async {
     try {
       final docRef = await _diariesRef.add(entry.toMap());
@@ -18,18 +20,138 @@ class FirestoreService {
     }
   }
 
-  // Stream realtime daftar diary milik user tertentu, terurut dari terbaru.
-  // Gunakan ini di StreamBuilder pada History Screen.
+  // =====================================================
+  // READ - REALTIME LIST
+  // =====================================================
+
   Stream<List<DiaryEntry>> getDiaries(String userId) {
     return _diariesRef
         .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => DiaryEntry.fromDoc(doc)).toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => DiaryEntry.fromDoc(doc))
+              .toList(),
+        );
   }
 
-  // Update sebagian data diary (umumnya diaryText).
+  // =====================================================
+  // READ - SINGLE DIARY
+  // =====================================================
+
+  Future<DiaryEntry?> getDiaryById(String id) async {
+    try {
+      final doc = await _diariesRef.doc(id).get();
+
+      if (!doc.exists) return null;
+
+      return DiaryEntry.fromDoc(doc);
+    } catch (e) {
+      throw 'Gagal mengambil diary: $e';
+    }
+  }
+
+  // =====================================================
+  // READ - LATEST DIARY
+  // =====================================================
+
+  Future<DiaryEntry?> getLatestDiary(String userId) async {
+    try {
+      final snapshot = await _diariesRef
+          .where('userId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) return null;
+
+      return DiaryEntry.fromDoc(snapshot.docs.first);
+    } catch (e) {
+      throw 'Gagal mengambil diary terakhir: $e';
+    }
+  }
+
+  // =====================================================
+  // READ - TOTAL DIARY
+  // =====================================================
+
+  Future<int> getDiaryCount(String userId) async {
+    try {
+      final snapshot = await _diariesRef
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      return snapshot.docs.length;
+    } catch (e) {
+      throw 'Gagal menghitung diary: $e';
+    }
+  }
+
+  // =====================================================
+  // READ - WEEKLY DIARIES
+  // =====================================================
+
+  Future<List<DiaryEntry>> getWeeklyDiaries(
+    String userId,
+  ) async {
+    try {
+      final weekAgo = DateTime.now().subtract(
+        const Duration(days: 7),
+      );
+
+      final snapshot = await _diariesRef
+          .where('userId', isEqualTo: userId)
+          .where(
+            'createdAt',
+            isGreaterThanOrEqualTo:
+                Timestamp.fromDate(weekAgo),
+          )
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => DiaryEntry.fromDoc(doc))
+          .toList();
+    } catch (e) {
+      throw 'Gagal mengambil diary mingguan: $e';
+    }
+  }
+
+  // =====================================================
+  // READ - MONTHLY DIARIES
+  // =====================================================
+
+  Future<List<DiaryEntry>> getMonthlyDiaries(
+    String userId,
+  ) async {
+    try {
+      final monthAgo = DateTime.now().subtract(
+        const Duration(days: 30),
+      );
+
+      final snapshot = await _diariesRef
+          .where('userId', isEqualTo: userId)
+          .where(
+            'createdAt',
+            isGreaterThanOrEqualTo:
+                Timestamp.fromDate(monthAgo),
+          )
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => DiaryEntry.fromDoc(doc))
+          .toList();
+    } catch (e) {
+      throw 'Gagal mengambil diary bulanan: $e';
+    }
+  }
+
+  // =====================================================
+  // UPDATE
+  // =====================================================
+
   Future<void> updateDiary({
     required String id,
     required Map<String, dynamic> data,
@@ -41,7 +163,10 @@ class FirestoreService {
     }
   }
 
-  // Hapus diary berdasarkan ID dokumen.
+  // =====================================================
+  // DELETE
+  // =====================================================
+
   Future<void> deleteDiary(String id) async {
     try {
       await _diariesRef.doc(id).delete();

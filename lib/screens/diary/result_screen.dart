@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
-import '../main.dart';
-import '../services/diary_service.dart';
-import 'history_screen.dart';
+import '../../core/app_theme.dart';
+import '../../services/diary_service.dart';
+import 'diary_list_screen.dart';
 
 // Screen yang menampilkan hasil analisis mood terakhir.
 class ResultScreen extends StatelessWidget {
@@ -252,7 +251,7 @@ class ResultScreen extends StatelessWidget {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => const HistoryScreen()),
+                        builder: (_) => const DiaryListScreen()),
                   );
                 },
                 icon: const Icon(Icons.history_rounded),

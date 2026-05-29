@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-
-import '../main.dart';
-import '../models/diary_entry.dart';
-import '../services/diary_service.dart';
-import '../services/firebase_auth_service.dart';
+import '../../core/app_theme.dart';
+import '../../models/diary_entry.dart';
+import '../../services/diary_service.dart';
+import '../../services/firebase_auth_service.dart';
 import 'edit_diary_screen.dart';
 
-class HistoryScreen extends StatelessWidget {
-  const HistoryScreen({super.key});
+class DiaryListScreen extends StatelessWidget {
+  const DiaryListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
