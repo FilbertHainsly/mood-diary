@@ -56,9 +56,9 @@ Pastikan di Firebase Console:
 - **Authentication** → enable provider **Email/Password**.
 - **Cloud Firestore** → buat database (production / test mode).
 
-### 4. HuggingFace API Token
+### 4. Gemini API Token
 
-Buka [lib/services/mood_api_service.dart](lib/services/mood_api_service.dart#L18) dan ganti nilai `_hfToken` dengan token milik Anda. Token bisa dibuat di https://huggingface.co/settings/tokens (cukup role **Read**).
+Buka [lib/services/mood_api_service.dart](lib/services/mood_api_service.dart#L18) dan ganti nilai `_apiToken` dengan token milik Anda. Token bisa dibuat di Google AI Studio.
 
 > Jika token tidak diset / request gagal, app otomatis pakai fallback keyword predictor.
 
