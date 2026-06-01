@@ -8,6 +8,7 @@ import 'core/app_theme.dart';
 import 'firebase_options.dart';
 import 'screens/auth/login_screen.dart';
 import 'services/auth_service.dart';
+import 'services/chat_service.dart';
 import 'services/diary_service.dart';
 
 Future<void> main() async {
@@ -32,6 +33,9 @@ class MoodDiaryApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => DiaryService(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ChatService(),
         ),
       ],
       child: MaterialApp(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../analytics/analytics_screen.dart';
+import '../chat/chat_list_screen.dart';
 import '../diary/diary_list_screen.dart';
 import '../diary/write_diary_screen.dart';
 import 'home_screen.dart';
@@ -23,6 +24,7 @@ class _MainNavigationScreenState
       const HomeScreen(),
       const DiaryListScreen(),
       const AnalyticsScreen(),
+      const ChatListScreen(),
       const WriteDiaryScreen(),
     ];
 
@@ -53,6 +55,11 @@ class _MainNavigationScreenState
             icon: Icon(Icons.analytics_outlined),
             selectedIcon: Icon(Icons.analytics),
             label: 'Analytics',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
+            label: 'Chatbot',
           ),
           NavigationDestination(
             icon: Icon(Icons.edit_note_outlined),

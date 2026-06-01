@@ -73,6 +73,26 @@ class FirestoreService {
   }
 
   // =====================================================
+  // READ - LATEST N DIARIES (tanpa batasan waktu)
+  // =====================================================
+
+  Future<List<DiaryEntry>> getLatestDiaries(
+    String userId, {
+    int limit = 3,
+  }) async {
+    try {
+      final snapshot = await _diariesRef
+          .where('userId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .limit(limit)
+          .get();
+      return snapshot.docs.map((doc) => DiaryEntry.fromDoc(doc)).toList();
+    } catch (e) {
+      throw 'Gagal mengambil diary terbaru: $e';
+    }
+  }
+
+  // =====================================================
   // READ - TOTAL DIARY
   // =====================================================
 
