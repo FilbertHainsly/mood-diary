@@ -58,7 +58,7 @@ Pastikan di Firebase Console:
 
 ### 4. Gemini API Token
 
-Buka [lib/services/mood_api_service.dart](lib/services/mood_api_service.dart#L18) dan ganti nilai `_apiToken` dengan token milik Anda. Token bisa dibuat di Google AI Studio.
+Buka [lib/services/mood_api_service.dart](lib/services/mood_api_service.dart#L18) dan ganti nilai `_geminiApiKey` dengan token milik Anda. Token bisa dibuat di Google AI Studio.
 
 > Jika token tidak diset / request gagal, app otomatis pakai fallback keyword predictor.
 
