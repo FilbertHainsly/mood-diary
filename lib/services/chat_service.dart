@@ -10,7 +10,7 @@ class ChatService extends ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirestoreService _firestoreService = FirestoreService();
 
-  static const String _geminiApiKey = 'Your API key';
+  static const String _geminiApiKey = 'Your API Key';
   static const String _modelName = 'gemini-2.5-flash';
 
   bool _isLoading = false;

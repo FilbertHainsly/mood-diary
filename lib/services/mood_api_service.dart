@@ -5,7 +5,7 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import '../models/mood_result.dart';
 
 class MoodApiService {
-  static const String _geminiApiKey = 'Your API key';
+  static const String _geminiApiKey = 'Your API Key';
 
   static const String _modelName = 'gemini-2.5-flash';
 
