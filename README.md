@@ -27,6 +27,60 @@ lib/
     └── mood_api_service.dart        # Klien HuggingFace + fallback
 ```
 
+```
+lib/
+│   firebase_options.dart
+│   main.dart
+│   
+├───core
+│       app_theme.dart
+│       
+├───models
+│       chat_message.dart
+│       chat_session.dart
+│       diary_entry.dart
+│       mood_result.dart
+│       user_model.dart
+│       
+├───screens
+│   ├───analytics
+│   │       analytics_screen.dart
+│   │       
+│   ├───auth
+│   │       login_screen.dart
+│   │       register_screen.dart
+│   │       
+│   ├───chat
+│   │       chat_list_screen.dart
+│   │       chat_room_screen.dart
+│   │       
+│   ├───diary
+│   │       diary_list_screen.dart
+│   │       edit_diary_screen.dart
+│   │       result_screen.dart
+│   │       write_diary_screen.dart
+│   │       
+│   └───home
+│           home_screen.dart
+│           main_navigation_screen.dart
+│           
+├───services
+│       analytics_service.dart
+│       auth_service.dart
+│       chat_service.dart
+│       diary_service.dart
+│       firebase_auth_service.dart
+│       firestore_service.dart
+│       local_storage_service.dart
+│       mood_api_service.dart
+│       
+└───widgets
+        diary_card.dart
+        loading_widget.dart
+        mood_badge.dart
+```
+
+
 ## Persiapan & Setup
 
 ### 1. Prasyarat
