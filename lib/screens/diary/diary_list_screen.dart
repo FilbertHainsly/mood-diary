@@ -6,6 +6,7 @@ import '../../models/diary_entry.dart';
 import '../../services/diary_service.dart';
 import '../../services/firebase_auth_service.dart';
 import 'edit_diary_screen.dart';
+import 'write_diary_screen.dart';
 
 class DiaryListScreen extends StatelessWidget {
   const DiaryListScreen({super.key});
@@ -28,6 +29,16 @@ class DiaryListScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const WriteDiaryScreen()),
+          );
+        },
+        backgroundColor: AppTheme.primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       body: SafeArea(
         child: StreamBuilder<List<DiaryEntry>>(

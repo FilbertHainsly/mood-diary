@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../analytics/analytics_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../diary/diary_list_screen.dart';
-import '../diary/write_diary_screen.dart';
 import 'home_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -25,7 +24,6 @@ class _MainNavigationScreenState
       const DiaryListScreen(),
       const AnalyticsScreen(),
       const ChatListScreen(),
-      const WriteDiaryScreen(),
     ];
 
     return Scaffold(
@@ -60,11 +58,6 @@ class _MainNavigationScreenState
             icon: Icon(Icons.chat_bubble_outline),
             selectedIcon: Icon(Icons.chat_bubble),
             label: 'Chatbot',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.edit_note_outlined),
-            selectedIcon: Icon(Icons.edit_note),
-            label: 'Write',
           ),
         ],
       ),
