@@ -108,4 +108,3 @@ flutter run
 Class diagram ini menggambarkan struktur aplikasi Mood Diary yang terbagi menjadi:
 - **Model Classes**: User, DiaryEntry, ChatSession, Message, TrustedContact
 - **Service Classes**: AuthService, FirestoreService, EmotionApiService, GeminiApiService, NotificationService
->>>>>>> 5103f2314a7ce4a9ce2bbf52518d5c9d23934dba
