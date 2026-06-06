@@ -1,4 +1,6 @@
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../core/app_theme.dart';
 import '../../services/diary_service.dart';
 import '../../services/firebase_auth_service.dart';
+import '../../services/storage_service.dart';
 import 'result_screen.dart';
 
 class WriteDiaryScreen extends StatefulWidget {
@@ -23,6 +26,11 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
 
   final TextEditingController _diaryController =
       TextEditingController();
+
+  final StorageService _storageService = StorageService();
+
+  File? _selectedImage;
+  bool _isPickingImage = false;
 
   @override
   void dispose() {
@@ -55,6 +63,31 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
     return null;
   }
 
+  Future<void> _pickImage() async {
+    setState(() => _isPickingImage = true);
+    try {
+      final file = await _storageService.pickFromGallery();
+      if (!mounted) return;
+      if (file != null) {
+        setState(() => _selectedImage = file);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memilih foto: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isPickingImage = false);
+    }
+  }
+
+  void _removeImage() {
+    setState(() => _selectedImage = null);
+  }
+
   Future<void> _handleAnalyze() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -71,6 +104,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
       userId: currentUser.uid,
       title: _titleController.text.trim(),
       diaryText: _diaryController.text.trim(),
+      imageFile: _selectedImage,
     );
 
     if (!mounted) return;
@@ -85,6 +119,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
 
       _titleController.clear();
       _diaryController.clear();
+      setState(() => _selectedImage = null);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -168,7 +203,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                         validator:
                             _validateDiary,
                         maxLines: null,
-                        minLines: 15,
+                        minLines: 12,
                         keyboardType:
                             TextInputType
                                 .multiline,
@@ -182,6 +217,15 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                           border:
                               InputBorder.none,
                         ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      _ImagePickerSection(
+                        image: _selectedImage,
+                        isLoading: _isPickingImage,
+                        onPick: _pickImage,
+                        onRemove: _removeImage,
                       ),
                     ],
                   ),
@@ -237,3 +281,75 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
   }
 }
 
+class _ImagePickerSection extends StatelessWidget {
+  final File? image;
+  final bool isLoading;
+  final VoidCallback onPick;
+  final VoidCallback onRemove;
+
+  const _ImagePickerSection({
+    required this.image,
+    required this.isLoading,
+    required this.onPick,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (image == null) {
+      return OutlinedButton.icon(
+        onPressed: isLoading ? null : onPick,
+        icon: isLoading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.image_outlined),
+        label: Text(isLoading ? 'Memuat...' : 'Tambah Foto'),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          side: BorderSide(color: Colors.grey.shade300),
+          foregroundColor: AppTheme.primaryColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: Image.file(
+            image!,
+            width: double.infinity,
+            height: 220,
+            fit: BoxFit.cover,
+          ),
+        ),
+        Positioned(
+          top: 8,
+          right: 8,
+          child: Material(
+            color: Colors.black.withOpacity(0.55),
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onRemove,
+              child: const Padding(
+                padding: EdgeInsets.all(6),
+                child: Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

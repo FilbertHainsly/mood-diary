@@ -1,9 +1,14 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_theme.dart';
 import '../../models/diary_entry.dart';
 import '../../services/diary_service.dart';
+import '../../services/firebase_auth_service.dart';
+import '../../services/storage_service.dart';
 
 // Screen untuk mengedit isi diary yang sudah ada.
 class EditDiaryScreen extends StatefulWidget {
@@ -18,6 +23,16 @@ class EditDiaryScreen extends StatefulWidget {
 class _EditDiaryScreenState extends State<EditDiaryScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _textController;
+
+  final StorageService _storageService = StorageService();
+
+  // Status foto saat edit:
+  // - _newImageFile != null   => user pilih foto baru (belum upload)
+  // - _imageRemoved == true   => user hapus foto lama
+  // - keduanya null/false     => pakai foto lama (diary.imageUrl)
+  File? _newImageFile;
+  bool _imageRemoved = false;
+  bool _isPickingImage = false;
 
   @override
   void initState() {
@@ -37,21 +52,82 @@ class _EditDiaryScreenState extends State<EditDiaryScreen> {
     return null;
   }
 
+  Future<void> _pickImage() async {
+    setState(() => _isPickingImage = true);
+    try {
+      final file = await _storageService.pickFromGallery();
+      if (!mounted) return;
+      if (file != null) {
+        setState(() {
+          _newImageFile = file;
+          _imageRemoved = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memilih foto: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isPickingImage = false);
+    }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _newImageFile = null;
+      _imageRemoved = true;
+    });
+  }
+
   Future<void> _handleUpdate() async {
     if (!_formKey.currentState!.validate()) return;
 
     final diaryService = context.read<DiaryService>();
-    final newText = _textController.text.trim();
+    final currentUser = FirebaseAuthService().currentUser();
+    if (currentUser == null) return;
 
-    if (newText == widget.diary.diaryText) {
+    final newText = _textController.text.trim();
+    final oldImageUrl = widget.diary.imageUrl;
+
+    final textChanged = newText != widget.diary.diaryText;
+    final imageChanged = _newImageFile != null || _imageRemoved;
+
+    if (!textChanged && !imageChanged) {
       Navigator.pop(context);
       return;
+    }
+
+    String? newImageUrl;
+    if (_newImageFile != null) {
+      newImageUrl = await diaryService.uploadImage(
+        userId: currentUser.uid,
+        file: _newImageFile!,
+      );
+      if (!mounted) return;
+      if (newImageUrl == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(diaryService.errorMessage ?? 'Gagal upload foto'),
+            backgroundColor: AppTheme.errorColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
     }
 
     final success = await diaryService.updateDiary(
       id: widget.diary.id,
       title: widget.diary.title,
       diaryText: newText,
+      newImageUrl: newImageUrl,
+      removeImage: _imageRemoved && newImageUrl == null,
+      oldImageUrlToDelete:
+          (newImageUrl != null || _imageRemoved) ? oldImageUrl : null,
     );
 
     if (!mounted) return;
@@ -141,7 +217,25 @@ class _EditDiaryScreenState extends State<EditDiaryScreen> {
                   ),
                   validator: _validateDiary,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
+
+                const Text(
+                  '📷 Foto Lampiran',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _EditImageSection(
+                  newImage: _newImageFile,
+                  existingUrl: _imageRemoved ? null : diary.imageUrl,
+                  isLoading: _isPickingImage,
+                  onPick: _pickImage,
+                  onRemove: _removeImage,
+                ),
+                const SizedBox(height: 16),
 
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -189,6 +283,122 @@ class _EditDiaryScreenState extends State<EditDiaryScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _EditImageSection extends StatelessWidget {
+  final File? newImage;
+  final String? existingUrl;
+  final bool isLoading;
+  final VoidCallback onPick;
+  final VoidCallback onRemove;
+
+  const _EditImageSection({
+    required this.newImage,
+    required this.existingUrl,
+    required this.isLoading,
+    required this.onPick,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImage = newImage != null ||
+        (existingUrl != null && existingUrl!.isNotEmpty);
+
+    if (!hasImage) {
+      return OutlinedButton.icon(
+        onPressed: isLoading ? null : onPick,
+        icon: isLoading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.image_outlined),
+        label: Text(isLoading ? 'Memuat...' : 'Tambah Foto'),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          side: BorderSide(color: Colors.grey.shade300),
+          foregroundColor: AppTheme.primaryColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: newImage != null
+                  ? Image.file(
+                      newImage!,
+                      width: double.infinity,
+                      height: 220,
+                      fit: BoxFit.cover,
+                    )
+                  : CachedNetworkImage(
+                      imageUrl: existingUrl!,
+                      width: double.infinity,
+                      height: 220,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(
+                        height: 220,
+                        color: Colors.grey.shade100,
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                      errorWidget: (_, __, ___) => Container(
+                        height: 220,
+                        color: Colors.grey.shade100,
+                        child: const Icon(Icons.broken_image_outlined,
+                            size: 48, color: AppTheme.textSecondary),
+                      ),
+                    ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Material(
+                color: Colors.black.withOpacity(0.55),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: onRemove,
+                  child: const Padding(
+                    padding: EdgeInsets.all(6),
+                    child: Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: isLoading ? null : onPick,
+          icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+          label: const Text('Ganti Foto'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            side: BorderSide(color: Colors.grey.shade300),
+            foregroundColor: AppTheme.primaryColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

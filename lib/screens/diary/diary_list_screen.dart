@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -135,7 +136,10 @@ class DiaryListScreen extends StatelessWidget {
 
     if (confirm == true && context.mounted) {
       final success =
-          await context.read<DiaryService>().deleteDiary(diary.id);
+          await context.read<DiaryService>().deleteDiary(
+                diary.id,
+                imageUrl: diary.imageUrl,
+              );
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -200,6 +204,31 @@ class DiaryListScreen extends StatelessWidget {
                     color: AppTheme.textSecondary, fontSize: 13),
               ),
               const Divider(height: 28),
+              if (diary.imageUrl != null && diary.imageUrl!.isNotEmpty) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: diary.imageUrl!,
+                    width: double.infinity,
+                    height: 200,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(
+                      height: 200,
+                      color: Colors.grey.shade100,
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                    errorWidget: (_, __, ___) => Container(
+                      height: 200,
+                      color: Colors.grey.shade100,
+                      child: const Icon(Icons.broken_image_outlined,
+                          size: 40, color: AppTheme.textSecondary),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               Text(
                 diary.diaryText,
                 style: const TextStyle(
@@ -394,10 +423,44 @@ class _DiaryCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              snippet,
-              style: const TextStyle(
-                  fontSize: 14, height: 1.4, color: AppTheme.textPrimary),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    snippet,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        height: 1.4,
+                        color: AppTheme.textPrimary),
+                  ),
+                ),
+                if (diary.imageUrl != null &&
+                    diary.imageUrl!.isNotEmpty) ...[
+                  const SizedBox(width: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: CachedNetworkImage(
+                      imageUrl: diary.imageUrl!,
+                      width: 64,
+                      height: 64,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(
+                        width: 64,
+                        height: 64,
+                        color: Colors.grey.shade100,
+                      ),
+                      errorWidget: (_, __, ___) => Container(
+                        width: 64,
+                        height: 64,
+                        color: Colors.grey.shade100,
+                        child: const Icon(Icons.broken_image_outlined,
+                            size: 20, color: AppTheme.textSecondary),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),

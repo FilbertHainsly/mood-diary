@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +15,7 @@ class ResultScreen extends StatelessWidget {
     final diaryService = context.watch<DiaryService>();
     final result = diaryService.lastResult;
     final diaryText = diaryService.lastDiaryText;
+    final imageUrl = diaryService.lastImageUrl;
     final analyzedAt = diaryService.lastAnalyzedAt ?? DateTime.now();
 
     if (result == null) {
@@ -129,6 +131,41 @@ class ResultScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 20),
+
+              if (imageUrl != null && imageUrl.isNotEmpty) ...[
+                const Text(
+                  '📷 Foto',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    width: double.infinity,
+                    height: 220,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(
+                      height: 220,
+                      color: Colors.grey.shade100,
+                      child: const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                    errorWidget: (_, __, ___) => Container(
+                      height: 220,
+                      color: Colors.grey.shade100,
+                      child: const Icon(Icons.broken_image_outlined,
+                          size: 48, color: AppTheme.textSecondary),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
 
               const Text(
                 '📖 Isi Diary',

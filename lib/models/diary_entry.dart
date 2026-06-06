@@ -21,6 +21,9 @@ class DiaryEntry {
   // Rekomendasi AI
   final String recommendation;
 
+  // URL foto lampiran (opsional)
+  final String? imageUrl;
+
   // Timestamp
   final DateTime createdAt;
 
@@ -35,6 +38,7 @@ class DiaryEntry {
 
     this.recommendation = '',
     this.isEncrypted = false,
+    this.imageUrl,
   });
 
   Map<String, dynamic> toMap() {
@@ -46,6 +50,7 @@ class DiaryEntry {
       'mood': mood,
       'confidence': confidence,
       'recommendation': recommendation,
+      'imageUrl': imageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -73,6 +78,10 @@ class DiaryEntry {
       recommendation:
           data['recommendation']?.toString() ?? '',
 
+      imageUrl: (data['imageUrl'] as String?)?.isEmpty ?? true
+          ? null
+          : data['imageUrl'] as String?,
+
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
@@ -88,6 +97,7 @@ class DiaryEntry {
     String? mood,
     double? confidence,
     String? recommendation,
+    String? imageUrl,
     DateTime? createdAt,
   }) {
     return DiaryEntry(
@@ -100,6 +110,7 @@ class DiaryEntry {
       confidence: confidence ?? this.confidence,
       recommendation:
           recommendation ?? this.recommendation,
+      imageUrl: imageUrl ?? this.imageUrl,
       createdAt: createdAt ?? this.createdAt,
     );
   }
