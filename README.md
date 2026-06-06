@@ -4,28 +4,6 @@ Aplikasi Flutter untuk mencatat diary harian sekaligus memprediksi mood pengguna
 
 ## Struktur Project
 
-```
-lib/
-├── main.dart                   
-├── firebase_options.dart      
-├── models/
-│   ├── diary_entry.dart        # Model entri diary (Firestore)
-│   ├── mood_result.dart        # Model hasil prediksi mood
-│   └── user_model.dart         # Model user
-├── screens/
-│   ├── login_screen.dart       # Halaman login
-│   ├── register_screen.dart    # Halaman registrasi
-│   ├── home_screen.dart        # Form tulis diary + analisis
-│   ├── result_screen.dart      # Hasil prediksi mood
-│   ├── history_screen.dart     # Riwayat diary
-│   └── edit_diary_screen.dart  # Edit entri diary
-└── services/
-    ├── auth_service.dart            # ChangeNotifier untuk auth
-    ├── firebase_auth_service.dart   # Wrapper Firebase Auth
-    ├── diary_service.dart           # ChangeNotifier untuk diary
-    ├── firestore_service.dart       # CRUD Firestore
-    └── mood_api_service.dart        # Klien HuggingFace + fallback
-```
 
 ```
 lib/
@@ -87,7 +65,6 @@ lib/
 
 - Flutter SDK `>=3.10.0`
 - Akun Firebase + project Firebase yang sudah dibuat
-- HuggingFace account untuk mendapatkan API token (opsional — ada fallback)
 
 ### 2. Clone & Install Dependencies
 
