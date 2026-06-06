@@ -1,17 +1,13 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../models/diary_entry.dart';
 import '../models/mood_result.dart';
 import 'firestore_service.dart';
 import 'mood_api_service.dart';
-import 'storage_service.dart';
 
 class DiaryService extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
   final MoodApiService _moodApi = MoodApiService();
-  final StorageService _storage = StorageService();
 
   bool _isAnalyzing = false;
   bool _isSaving = false;
@@ -19,7 +15,6 @@ class DiaryService extends ChangeNotifier {
 
   MoodResult? _lastResult;
   String _lastDiaryText = '';
-  String? _lastImageUrl;
   DateTime? _lastAnalyzedAt;
 
   bool get isAnalyzing => _isAnalyzing;
@@ -28,7 +23,6 @@ class DiaryService extends ChangeNotifier {
 
   MoodResult? get lastResult => _lastResult;
   String get lastDiaryText => _lastDiaryText;
-  String? get lastImageUrl => _lastImageUrl;
   DateTime? get lastAnalyzedAt => _lastAnalyzedAt;
 
   // =====================================================
@@ -39,26 +33,16 @@ class DiaryService extends ChangeNotifier {
     required String userId,
     required String title,
     required String diaryText,
-    File? imageFile,
   }) async {
     _isAnalyzing = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      String? imageUrl;
-      if (imageFile != null) {
-        imageUrl = await _storage.uploadDiaryImage(
-          userId: userId,
-          file: imageFile,
-        );
-      }
-
       final result = await _moodApi.predictMood(diaryText);
 
       _lastResult = result;
       _lastDiaryText = diaryText;
-      _lastImageUrl = imageUrl;
       _lastAnalyzedAt = DateTime.now();
 
       final entry = DiaryEntry(
@@ -69,7 +53,6 @@ class DiaryService extends ChangeNotifier {
         mood: result.mood,
         confidence: result.confidence,
         recommendation: result.recommendation,
-        imageUrl: imageUrl,
         createdAt: _lastAnalyzedAt!,
       );
 
@@ -105,9 +88,6 @@ class DiaryService extends ChangeNotifier {
     required String id,
     required String title,
     required String diaryText,
-    String? newImageUrl,
-    String? oldImageUrlToDelete,
-    bool removeImage = false,
   }) async {
     _isSaving = true;
     _errorMessage = null;
@@ -115,25 +95,13 @@ class DiaryService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final data = <String, dynamic>{
-        'title': title,
-        'diaryText': diaryText,
-      };
-
-      if (removeImage) {
-        data['imageUrl'] = null;
-      } else if (newImageUrl != null) {
-        data['imageUrl'] = newImageUrl;
-      }
-
       await _firestoreService.updateDiary(
         id: id,
-        data: data,
+        data: {
+          'title': title,
+          'diaryText': diaryText,
+        },
       );
-
-      if (oldImageUrlToDelete != null && oldImageUrlToDelete.isNotEmpty) {
-        await _storage.deleteImageByUrl(oldImageUrlToDelete);
-      }
 
       _isSaving = false;
       notifyListeners();
@@ -150,32 +118,12 @@ class DiaryService extends ChangeNotifier {
   }
 
   // =====================================================
-  // UPLOAD IMAGE (untuk edit screen)
-  // =====================================================
-
-  Future<String?> uploadImage({
-    required String userId,
-    required File file,
-  }) async {
-    try {
-      return await _storage.uploadDiaryImage(userId: userId, file: file);
-    } catch (e) {
-      _errorMessage = e.toString();
-      notifyListeners();
-      return null;
-    }
-  }
-
-  // =====================================================
   // DELETE DIARY
   // =====================================================
 
-  Future<bool> deleteDiary(String id, {String? imageUrl}) async {
+  Future<bool> deleteDiary(String id) async {
     try {
       await _firestoreService.deleteDiary(id);
-      if (imageUrl != null && imageUrl.isNotEmpty) {
-        await _storage.deleteImageByUrl(imageUrl);
-      }
       return true;
     } catch (e) {
       _errorMessage = e.toString();
@@ -211,7 +159,6 @@ class DiaryService extends ChangeNotifier {
   void clearLastResult() {
     _lastResult = null;
     _lastDiaryText = '';
-    _lastImageUrl = null;
     _lastAnalyzedAt = null;
 
     notifyListeners();
