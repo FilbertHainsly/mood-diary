@@ -1,63 +1,57 @@
 # Mood Diary
 
-Aplikasi Flutter untuk mencatat diary harian sekaligus memprediksi mood penggunanya secara otomatis menggunakan model gemini API. Dibuat sebagai Final Project mata kuliah **Pemrograman Perangkat Bergerak (PPB)**.
+Aplikasi Flutter untuk mencatat diary harian sekaligus memprediksi mood pengguna secara otomatis menggunakan Gemini API. Dibuat sebagai Final Project mata kuliah **Pemrograman Perangkat Bergerak (PPB)**.
+
+## Fitur
+
+- **Diary** — tulis, edit, dan hapus catatan harian dengan tampilan seperti aplikasi Notes
+- **Analisis Mood Otomatis** — setiap diary dianalisis oleh Gemini AI untuk mendeteksi mood (positive, stable, anxious, stressed, depressed)
+- **Statistik** — grafik tren harian/mingguan, distribusi mood, streak menulis, dan hari aktif
+- **Chat AI** — chatbot berbasis Gemini untuk bercerita dan mendapatkan respons empatik
+- **Autentikasi** — login dan registrasi dengan Firebase Email/Password
 
 ## Struktur Project
 
-
 ```
 lib/
-│   firebase_options.dart
-│   main.dart
-│   
-├───core
-│       app_theme.dart
-│       
-├───models
-│       chat_message.dart
-│       chat_session.dart
-│       diary_entry.dart
-│       mood_result.dart
-│       user_model.dart
-│       
-├───screens
-│   ├───analytics
-│   │       analytics_screen.dart
-│   │       
-│   ├───auth
-│   │       login_screen.dart
-│   │       register_screen.dart
-│   │       
-│   ├───chat
-│   │       chat_list_screen.dart
-│   │       chat_room_screen.dart
-│   │       
-│   ├───diary
-│   │       diary_list_screen.dart
-│   │       edit_diary_screen.dart
-│   │       result_screen.dart
-│   │       write_diary_screen.dart
-│   │       
-│   └───home
-│           home_screen.dart
-│           main_navigation_screen.dart
-│           
-├───services
-│       analytics_service.dart
-│       auth_service.dart
-│       chat_service.dart
-│       diary_service.dart
-│       firebase_auth_service.dart
-│       firestore_service.dart
-│       local_storage_service.dart
-│       mood_api_service.dart
-│       
-└───widgets
-        diary_card.dart
-        loading_widget.dart
-        mood_badge.dart
+├── config/
+│   ├── secrets.dart          # API key (GITIGNORED — jangan commit)
+│   └── secrets.example.dart  # Template API key
+├── core/
+│   └── app_theme.dart
+├── models/
+│   ├── chat_message.dart
+│   ├── chat_session.dart
+│   ├── diary_entry.dart
+│   ├── mood_result.dart
+│   └── user_model.dart
+├── screens/
+│   ├── analytics/
+│   │   └── analytics_screen.dart
+│   ├── auth/
+│   │   ├── login_screen.dart
+│   │   └── register_screen.dart
+│   ├── chat/
+│   │   ├── chat_list_screen.dart
+│   │   └── chat_room_screen.dart
+│   ├── diary/
+│   │   ├── diary_list_screen.dart
+│   │   ├── edit_diary_screen.dart
+│   │   └── write_diary_screen.dart
+│   └── home/
+│       ├── home_screen.dart
+│       └── main_navigation_screen.dart
+├── services/
+│   ├── analytics_service.dart
+│   ├── auth_service.dart
+│   ├── chat_service.dart
+│   ├── diary_service.dart
+│   ├── firebase_auth_service.dart
+│   ├── firestore_service.dart
+│   └── mood_api_service.dart
+├── firebase_options.dart
+└── main.dart
 ```
-
 
 ## Persiapan & Setup
 
@@ -65,18 +59,19 @@ lib/
 
 - Flutter SDK `>=3.10.0`
 - Akun Firebase + project Firebase yang sudah dibuat
+- Gemini API key dari [Google AI Studio](https://aistudio.google.com)
 
 ### 2. Clone & Install Dependencies
 
 ```bash
 git clone <repo-url>
-cd mood_diary
+cd fp_ppb
 flutter pub get
 ```
 
 ### 3. Konfigurasi Firebase
 
-Project sudah berisi `lib/firebase_options.dart` yang di-generate oleh FlutterFire CLI. Jika ingin pakai project Firebase Anda sendiri:
+Project sudah berisi `lib/firebase_options.dart` yang di-generate oleh FlutterFire CLI. Jika ingin pakai project Firebase sendiri:
 
 ```bash
 dart pub global activate flutterfire_cli
@@ -84,27 +79,34 @@ flutterfire configure
 ```
 
 Pastikan di Firebase Console:
-- **Authentication** → enable provider **Email/Password**.
-- **Cloud Firestore** → buat database (production / test mode).
+- **Authentication** → aktifkan provider **Email/Password**
+- **Cloud Firestore** → buat database (production / test mode)
 
-### 4. Gemini API Token
+### 4. Gemini API Key
 
-Buka [lib/services/mood_api_service.dart](lib/services/mood_api_service.dart#L18) dan ganti nilai `_geminiApiKey` dengan token milik Anda. Token bisa dibuat di Google AI Studio.
+Salin file template dan isi dengan API key milikmu:
 
-> Jika token tidak diset / request gagal, app otomatis pakai fallback keyword predictor.
+```bash
+cp lib/config/secrets.example.dart lib/config/secrets.dart
+```
+
+Buka `lib/config/secrets.dart` dan ganti nilai `geminiApiKey`:
+
+```dart
+class Secrets {
+  static const String geminiApiKey = 'ISI_API_KEY_KAMU_DI_SINI';
+}
+```
+
+> File `secrets.dart` sudah masuk `.gitignore` — tidak akan ter-commit ke repository.
 
 ### 5. Jalankan App
 
 ```bash
 flutter run
 ```
-=======
-##  Class Diagram
+
+## Class Diagram
 
 ![Class Diagram](https://github.com/user-attachments/assets/edf24662-4429-4e53-998e-eddc7883626a)
->  ([Link Diagram](https://drive.google.com/file/d/1qaYikw3Q80jyeQ_0Wjic_2kIu9O03UhY/view))  
-
-### Penjelasan Singkat
-Class diagram ini menggambarkan struktur aplikasi Mood Diary yang terbagi menjadi:
-- **Model Classes**: User, DiaryEntry, ChatSession, Message, TrustedContact
-- **Service Classes**: AuthService, FirestoreService, EmotionApiService, GeminiApiService, NotificationService
+> ([Link Diagram](https://drive.google.com/file/d/1qaYikw3Q80jyeQ_0Wjic_2kIu9O03UhY/view))
