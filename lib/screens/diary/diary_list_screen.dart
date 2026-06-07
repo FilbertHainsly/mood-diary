@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/app_theme.dart';
 import '../../models/diary_entry.dart';
 import '../../services/diary_service.dart';
@@ -8,112 +9,37 @@ import '../../services/firebase_auth_service.dart';
 import 'edit_diary_screen.dart';
 import 'write_diary_screen.dart';
 
-class DiaryListScreen extends StatelessWidget {
+class DiaryListScreen extends StatefulWidget {
   const DiaryListScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final currentUser = FirebaseAuthService().currentUser();
-    final diaryService = context.read<DiaryService>();
+  State<DiaryListScreen> createState() => _DiaryListScreenState();
+}
 
-    if (currentUser == null) {
-      return const Scaffold(
-        body: Center(child: Text('Anda belum login')),
-      );
-    }
+class _DiaryListScreenState extends State<DiaryListScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('History Diary'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const WriteDiaryScreen()),
-          );
-        },
-        backgroundColor: AppTheme.primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-      body: SafeArea(
-        child: StreamBuilder<List<DiaryEntry>>(
-          stream: diaryService.watchDiaries(currentUser.uid),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    'Terjadi kesalahan: ${snapshot.error}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: AppTheme.errorColor),
-                  ),
-                ),
-              );
-            }
-
-            final diaries = snapshot.data ?? [];
-
-            if (diaries.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('📭', style: TextStyle(fontSize: 64)),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Belum ada diary',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Mulai tulis diary pertamamu!',
-                      style: TextStyle(
-                          color: AppTheme.textSecondary.withOpacity(0.8)),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: diaries.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final diary = diaries[index];
-                return _DiaryCard(
-                  diary: diary,
-                  onDelete: () => _confirmDelete(context, diary),
-                  onEdit: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => EditDiaryScreen(diary: diary),
-                    ),
-                  ),
-                  onDetail: () => _showDetail(context, diary),
-                );
-              },
-            );
-          },
-        ),
-      ),
-    );
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
-  Future<void> _confirmDelete(BuildContext context, DiaryEntry diary) async {
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final dateOnly = DateTime(date.year, date.month, date.day);
+
+    if (dateOnly == today) return 'Hari ini';
+    if (dateOnly == yesterday) return 'Kemarin';
+    if (date.year == now.year) return DateFormat('d MMM').format(date);
+    return DateFormat('d MMM yyyy').format(date);
+  }
+
+  Future<void> _confirmDelete(
+      BuildContext context, DiaryEntry diary) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -122,11 +48,13 @@ class DiaryListScreen extends StatelessWidget {
             'Diary yang dihapus tidak dapat dikembalikan. Lanjutkan?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Batal')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
+            style:
+                TextButton.styleFrom(foregroundColor: AppTheme.errorColor),
             child: const Text('Hapus'),
           ),
         ],
@@ -150,256 +78,289 @@ class DiaryListScreen extends StatelessWidget {
     }
   }
 
-  void _showDetail(BuildContext context, DiaryEntry diary) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+  @override
+  Widget build(BuildContext context) {
+    final currentUser = FirebaseAuthService().currentUser();
+    final diaryService = context.read<DiaryService>();
+
+    if (currentUser == null) {
+      return const Scaffold(
+        body: Center(child: Text('Anda belum login')),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Diary')),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const WriteDiaryScreen()),
+        ),
+        backgroundColor: AppTheme.primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        maxChildSize: 0.9,
-        minChildSize: 0.4,
-        expand: false,
-        builder: (_, controller) => SingleChildScrollView(
-          controller: controller,
-          padding: const EdgeInsets.all(20),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (val) => setState(() => _query = val),
+                decoration: InputDecoration(
+                  hintText: 'Cari diary...',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: _query.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            Expanded(
+              child: StreamBuilder<List<DiaryEntry>>(
+                stream: diaryService.watchDiaries(currentUser.uid),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'Terjadi kesalahan: ${snapshot.error}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: AppTheme.errorColor),
+                        ),
+                      ),
+                    );
+                  }
+
+                  final all = snapshot.data ?? [];
+                  final diaries =
+                      diaryService.searchDiaries(all, _query);
+
+                  if (all.isEmpty) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('📭',
+                              style: TextStyle(fontSize: 64)),
+                          SizedBox(height: 12),
+                          Text(
+                            'Belum ada diary',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            'Mulai tulis diary pertamamu!',
+                            style: TextStyle(
+                                color: AppTheme.textSecondary),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (diaries.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('🔍',
+                              style: TextStyle(fontSize: 48)),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Tidak ada diary untuk "$_query"',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return GridView.builder(
+                    padding:
+                        const EdgeInsets.fromLTRB(12, 8, 12, 80),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      mainAxisExtent: 175,
+                    ),
+                    itemCount: diaries.length,
+                    itemBuilder: (context, index) {
+                      final diary = diaries[index];
+                      return _NoteCard(
+                        diary: diary,
+                        dateStr: _formatDate(diary.createdAt),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                EditDiaryScreen(diary: diary),
+                          ),
+                        ),
+                        onDelete: () =>
+                            _confirmDelete(context, diary),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NoteCard extends StatelessWidget {
+  final DiaryEntry diary;
+  final String dateStr;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  const _NoteCard({
+    required this.diary,
+    required this.dateStr,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  Color get _bgColor {
+    switch (diary.mood.toLowerCase()) {
+      case 'positive':
+        return const Color(0xFFFFF9E6);
+      case 'depressed':
+        return const Color(0xFFEFF6FF);
+      case 'anxious':
+        return const Color(0xFFEFFFFE);
+      case 'stressed':
+        return const Color(0xFFFFF2F0);
+      case 'stable':
+        return const Color(0xFFF7F7F7);
+      default:
+        return Colors.white;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: _bgColor,
+      borderRadius: BorderRadius.circular(16),
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.07),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _MoodBadge(mood: diary.mood, fontSize: 18),
-                  const Spacer(),
-                  Text(
-                    '${(diary.confidence * 100).toStringAsFixed(1)}%',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.moodColor(diary.mood),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                DateFormat('EEEE, dd MMMM yyyy • HH:mm')
-                    .format(diary.createdAt),
-                style: const TextStyle(
-                    color: AppTheme.textSecondary, fontSize: 13),
-              ),
-              const Divider(height: 28),
-              Text(
-                diary.diaryText,
-                style: const TextStyle(
-                    fontSize: 15, height: 1.5, color: AppTheme.textPrimary),
-              ),
-              if (diary.recommendation.isNotEmpty) ...[
-                const SizedBox(height: 20),
-                const Text(
-                  '💡 Rekomendasi dari AI',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppTheme.moodColor(diary.mood).withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppTheme.moodColor(diary.mood).withOpacity(0.35),
-                    ),
-                  ),
-                  child: Text(
-                    diary.recommendation,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.5,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// Badge kecil untuk menampilkan mood dengan emoji + warna.
-class _MoodBadge extends StatelessWidget {
-  final String mood;
-  final double fontSize;
-
-  const _MoodBadge({required this.mood, this.fontSize = 14});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = AppTheme.moodColor(mood);
-    final emoji = AppTheme.moodEmoji(mood);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: TextStyle(fontSize: fontSize + 2)),
-          const SizedBox(width: 6),
-          Text(
-            mood,
-            style: TextStyle(
-              fontSize: fontSize,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Widget kartu untuk satu item diary di list.
-class _DiaryCard extends StatelessWidget {
-  final DiaryEntry diary;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-  final VoidCallback onDetail;
-
-  const _DiaryCard({
-    required this.diary,
-    required this.onEdit,
-    required this.onDelete,
-    required this.onDetail,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = AppTheme.moodColor(diary.mood);
-
-    final snippet = diary.diaryText.length > 80
-        ? '${diary.diaryText.substring(0, 80)}...'
-        : diary.diaryText;
-
-    return InkWell(
-      onTap: onDetail,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      AppTheme.moodEmoji(diary.mood),
-                      style: const TextStyle(fontSize: 26),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        diary.mood,
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        diary.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        DateFormat('dd MMM yyyy • HH:mm')
-                            .format(diary.createdAt),
-                        style: const TextStyle(
-                            fontSize: 12, color: AppTheme.textSecondary),
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(
+                      Icons.more_vert_rounded,
+                      size: 18,
+                      color: AppTheme.textSecondary,
+                    ),
+                    onSelected: (value) {
+                      if (value == 'delete') onDelete();
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline,
+                                size: 18, color: AppTheme.errorColor),
+                            SizedBox(width: 8),
+                            Text(
+                              'Hapus',
+                              style:
+                                  TextStyle(color: AppTheme.errorColor),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Expanded(
+                child: Text(
+                  diary.diaryText,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                    height: 1.4,
+                  ),
                 ),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert_rounded,
-                      color: AppTheme.textSecondary),
-                  onSelected: (value) {
-                    if (value == 'edit') onEdit();
-                    if (value == 'delete') onDelete();
-                    if (value == 'detail') onDetail();
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(
-                        value: 'detail',
-                        child: Row(children: [
-                          Icon(Icons.visibility_outlined, size: 18),
-                          SizedBox(width: 8),
-                          Text('Detail'),
-                        ])),
-                    PopupMenuItem(
-                        value: 'edit',
-                        child: Row(children: [
-                          Icon(Icons.edit_outlined, size: 18),
-                          SizedBox(width: 8),
-                          Text('Edit'),
-                        ])),
-                    PopupMenuItem(
-                        value: 'delete',
-                        child: Row(children: [
-                          Icon(Icons.delete_outline,
-                              size: 18, color: AppTheme.errorColor),
-                          SizedBox(width: 8),
-                          Text('Hapus',
-                              style:
-                                  TextStyle(color: AppTheme.errorColor)),
-                        ])),
-                  ],
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Text(
+                  dateStr,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              snippet,
-              style: const TextStyle(
-                  fontSize: 14, height: 1.4, color: AppTheme.textPrimary),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

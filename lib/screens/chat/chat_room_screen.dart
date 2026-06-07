@@ -29,8 +29,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     super.dispose();
   }
 
-  // Double postFrameCallback: frame pertama render item baru,
-  // frame kedua baru maxScrollExtent sudah ter-update.
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -49,7 +47,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (text.isEmpty) return;
 
     _textController.clear();
-    _scrollToBottom(); // scroll segera saat tombol kirim ditekan
+    _scrollToBottom();
 
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     await context.read<ChatService>().sendMessage(
@@ -64,7 +62,6 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   Widget build(BuildContext context) {
     final chatService = context.watch<ChatService>();
 
-    // Saat typing indicator hilang (bot selesai), scroll ke bawah
     if (_wasSending && !chatService.isSending) _scrollToBottom();
     _wasSending = chatService.isSending;
 

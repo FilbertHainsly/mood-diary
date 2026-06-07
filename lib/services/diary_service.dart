@@ -118,6 +118,46 @@ class DiaryService extends ChangeNotifier {
   }
 
   // =====================================================
+  // RE-ANALYZE AND UPDATE DIARY
+  // =====================================================
+
+  Future<bool> reanalyzeAndUpdate({
+    required String id,
+    required String title,
+    required String newDiaryText,
+    required String oldDiaryText,
+  }) async {
+    _isSaving = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final data = <String, dynamic>{
+        'title': title,
+        'diaryText': newDiaryText,
+      };
+
+      if (newDiaryText.trim() != oldDiaryText.trim()) {
+        final result = await _moodApi.predictMood(newDiaryText);
+        data['mood'] = result.mood;
+        data['confidence'] = result.confidence;
+        data['recommendation'] = result.recommendation;
+      }
+
+      await _firestoreService.updateDiary(id: id, data: data);
+
+      _isSaving = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isSaving = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // =====================================================
   // DELETE DIARY
   // =====================================================
 

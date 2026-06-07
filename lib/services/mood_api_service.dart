@@ -2,11 +2,10 @@ import 'dart:convert';
 
 import 'package:google_generative_ai/google_generative_ai.dart';
 
+import '../config/secrets.dart';
 import '../models/mood_result.dart';
 
 class MoodApiService {
-  static const String _geminiApiKey = 'Your API Key';
-
   static const String _modelName = 'gemini-2.5-flash';
 
   static const List<String> _allowedMoods = [
@@ -19,7 +18,7 @@ class MoodApiService {
 
   late final GenerativeModel _model = GenerativeModel(
     model: _modelName,
-    apiKey: _geminiApiKey,
+    apiKey: Secrets.geminiApiKey,
     generationConfig: GenerationConfig(
       temperature: 0.7,
       topP: 0.9,
@@ -176,8 +175,8 @@ Output:
       throw 'Teks diary tidak boleh kosong';
     }
 
-    if (_geminiApiKey.isEmpty ||
-        _geminiApiKey == 'YOUR_GEMINI_API_KEY_HERE') {
+    if (Secrets.geminiApiKey.isEmpty ||
+        Secrets.geminiApiKey == 'ISI_API_KEY_GEMINI_KAMU_DI_SINI') {
       throw 'Gemini API key belum dikonfigurasi';
     }
 

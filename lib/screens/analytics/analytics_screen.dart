@@ -57,7 +57,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Analytics'),
+        title: const Text('Statistik'),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -85,11 +85,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
             final totalEntries = filtered.length;
             final dominantMood = _analytics.dominantMood(filtered);
-            final avgConfidence = _analytics.averageConfidence(filtered);
+            final activeDays = filtered.map((d) => DateTime(d.createdAt.year, d.createdAt.month, d.createdAt.day)).toSet().length;
             final streak = _analytics.calculateStreak(all);
             final positivity = _analytics.positivityRatio(filtered);
             final distribution = _analytics.moodDistribution(filtered);
-            final weeklyTrend = _analytics.diariesPerDayLastWeek(all);
+            // Trend chart — adapts to selected period
+            final List<int> trendBuckets;
+            final List<String> trendLabels;
+            final String trendTitle;
+            if (_period == _Period.week) {
+              trendBuckets = _analytics.diariesPerDayLastWeek(all);
+              const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+              final now = DateTime.now();
+              trendLabels = List.generate(7, (i) {
+                final day = now.subtract(Duration(days: 6 - i));
+                return dayNames[day.weekday % 7];
+              });
+              trendTitle = 'Tren Harian';
+            } else if (_period == _Period.month) {
+              trendBuckets = _analytics.diariesPerWeekLastMonth(all);
+              trendLabels = ['Mg 1', 'Mg 2', 'Mg 3', 'Mg 4'];
+              trendTitle = 'Tren Mingguan';
+            } else {
+              trendBuckets = [];
+              trendLabels = [];
+              trendTitle = '';
+            }
 
             return SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -132,11 +153,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     children: [
                       Expanded(
                         child: _SmallStat(
-                          title: 'Avg. Confidence',
-                          value:
-                              '${(avgConfidence * 100).toStringAsFixed(0)}%',
-                          subtitle: 'Rata-rata akurasi AI',
-                          icon: Icons.verified_rounded,
+                          title: 'Hari Aktif',
+                          value: '$activeDays',
+                          subtitle: 'Hari menulis diary',
+                          icon: Icons.calendar_today_rounded,
                           color: const Color(0xFF42A5F5),
                         ),
                       ),
@@ -157,7 +177,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   const SizedBox(height: 24),
 
                   // Dominant mood
-                  _SectionHeader(
+                  const _SectionHeader(
                     icon: Icons.insights_rounded,
                     title: 'Dominant Mood',
                   ),
@@ -170,7 +190,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   const SizedBox(height: 24),
 
                   // Mood distribution
-                  _SectionHeader(
+                  const _SectionHeader(
                     icon: Icons.pie_chart_rounded,
                     title: 'Distribusi Mood',
                   ),
@@ -181,20 +201,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Weekly activity trend
-                  _SectionHeader(
-                    icon: Icons.show_chart_rounded,
-                    title: 'Aktivitas 7 Hari Terakhir',
-                  ),
-                  const SizedBox(height: 10),
-                  _WeeklyTrendCard(buckets: weeklyTrend),
-
-                  const SizedBox(height: 24),
+                  // Trend chart — hidden when period = all
+                  if (_period != _Period.all) ...[
+                    _SectionHeader(
+                      icon: Icons.show_chart_rounded,
+                      title: trendTitle,
+                    ),
+                    const SizedBox(height: 10),
+                    _TrendBarChart(
+                      buckets: trendBuckets,
+                      labels: trendLabels,
+                    ),
+                    const SizedBox(height: 24),
+                  ],
 
                   // Recent entries (small list)
-                  _SectionHeader(
+                  const _SectionHeader(
                     icon: Icons.timeline_rounded,
                     title: 'Timeline Mood',
+                    subtitle: '8 entri terbaru',
                   ),
                   const SizedBox(height: 10),
                   _TimelineCard(diaries: filtered.take(8).toList()),
@@ -263,23 +288,40 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String? subtitle;
 
-  const _SectionHeader({required this.icon, required this.title});
+  const _SectionHeader({required this.icon, required this.title, this.subtitle});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: AppTheme.primaryColor),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
+        Row(
+          children: [
+            Icon(icon, size: 18, color: AppTheme.primaryColor),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ],
         ),
+        if (subtitle != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 26, top: 2),
+            child: Text(
+              subtitle!,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -318,7 +360,7 @@ class _SmallStat extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha:0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, size: 18, color: color),
@@ -365,7 +407,7 @@ class _DominantMoodCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (total == 0) {
-      return _EmptyBox(
+      return const _EmptyBox(
         text: 'Belum ada diary pada periode ini.',
       );
     }
@@ -378,14 +420,14 @@ class _DominantMoodCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            color.withOpacity(0.20),
-            color.withOpacity(0.05),
+            color.withValues(alpha:0.20),
+            color.withValues(alpha:0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: color.withValues(alpha:0.35)),
       ),
       child: Row(
         children: [
@@ -444,7 +486,7 @@ class _DistributionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (distribution.isEmpty) {
-      return _EmptyBox(
+      return const _EmptyBox(
         text: 'Belum cukup data untuk menghitung distribusi.',
       );
     }
@@ -515,7 +557,7 @@ class _DistributionBar extends StatelessWidget {
           child: LinearProgressIndicator(
             value: stat.percentage.clamp(0.0, 1.0),
             minHeight: 10,
-            backgroundColor: color.withOpacity(0.12),
+            backgroundColor: color.withValues(alpha:0.12),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
@@ -527,22 +569,18 @@ class _DistributionBar extends StatelessWidget {
 // =====================================================
 // WEEKLY TREND BAR CHART
 // =====================================================
-class _WeeklyTrendCard extends StatelessWidget {
+class _TrendBarChart extends StatelessWidget {
   final List<int> buckets;
+  final List<String> labels;
 
-  const _WeeklyTrendCard({required this.buckets});
+  const _TrendBarChart({required this.buckets, required this.labels});
 
   @override
   Widget build(BuildContext context) {
-    final maxVal = buckets.isEmpty
-        ? 0
-        : buckets.reduce((a, b) => a > b ? a : b);
+    if (buckets.isEmpty) return const SizedBox.shrink();
 
-    final today = DateTime.now();
-    final labels = List.generate(7, (i) {
-      final day = today.subtract(Duration(days: 6 - i));
-      return DateFormat('E').format(day);
-    });
+    final maxVal = buckets.reduce((a, b) => a > b ? a : b);
+    final count = buckets.length;
 
     return Container(
       width: double.infinity,
@@ -558,18 +596,17 @@ class _WeeklyTrendCard extends StatelessWidget {
             height: 140,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(7, (i) {
+              children: List.generate(count, (i) {
                 final v = buckets[i];
                 final ratio = maxVal == 0 ? 0.0 : v / maxVal;
-                final isToday = i == 6;
-                final color = isToday
+                final isLast = i == count - 1;
+                final color = isLast
                     ? AppTheme.primaryColor
-                    : AppTheme.primaryColor.withOpacity(0.45);
+                    : AppTheme.primaryColor.withValues(alpha: 0.45);
 
                 return Expanded(
                   child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
@@ -589,7 +626,7 @@ class _WeeklyTrendCard extends StatelessWidget {
                             gradient: LinearGradient(
                               colors: [
                                 color,
-                                color.withOpacity(0.6),
+                                color.withValues(alpha: 0.6),
                               ],
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
@@ -608,16 +645,16 @@ class _WeeklyTrendCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Row(
-            children: List.generate(7, (i) {
+            children: List.generate(count, (i) {
+              final isLast = i == count - 1;
               return Expanded(
                 child: Text(
                   labels[i],
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight:
-                        i == 6 ? FontWeight.w800 : FontWeight.w500,
-                    color: i == 6
+                    fontWeight: isLast ? FontWeight.w800 : FontWeight.w500,
+                    color: isLast
                         ? AppTheme.primaryColor
                         : AppTheme.textSecondary,
                   ),
@@ -642,7 +679,7 @@ class _TimelineCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (diaries.isEmpty) {
-      return _EmptyBox(text: 'Belum ada entri pada periode ini.');
+      return const _EmptyBox(text: 'Belum ada entri pada periode ini.');
     }
 
     return Container(
@@ -672,7 +709,7 @@ class _TimelineCard extends StatelessWidget {
                         color: color,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: color.withOpacity(0.35),
+                          color: color.withValues(alpha:0.35),
                           width: 3,
                         ),
                       ),

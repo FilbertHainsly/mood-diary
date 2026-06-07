@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/app_theme.dart';
 import '../../models/diary_entry.dart';
 import '../../services/diary_service.dart';
 
-// Screen untuk mengedit isi diary yang sudah ada.
 class EditDiaryScreen extends StatefulWidget {
   final DiaryEntry diary;
 
@@ -16,42 +15,61 @@ class EditDiaryScreen extends StatefulWidget {
 }
 
 class _EditDiaryScreenState extends State<EditDiaryScreen> {
-  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _titleController;
   late TextEditingController _textController;
 
   @override
   void initState() {
     super.initState();
+    _titleController = TextEditingController(text: widget.diary.title);
     _textController = TextEditingController(text: widget.diary.diaryText);
   }
 
   @override
   void dispose() {
+    _titleController.dispose();
     _textController.dispose();
     super.dispose();
   }
 
-  String? _validateDiary(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Diary tidak boleh kosong';
-    if (value.trim().length < 10) return 'Tulis minimal 10 karakter';
-    return null;
-  }
-
-  Future<void> _handleUpdate() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final diaryService = context.read<DiaryService>();
+  Future<void> _handleSave() async {
+    final newTitle = _titleController.text.trim();
     final newText = _textController.text.trim();
 
-    if (newText == widget.diary.diaryText) {
+    if (newTitle.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Judul minimal 3 karakter'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    if (newText.length < 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tulis minimal 10 karakter'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final titleChanged = newTitle != widget.diary.title;
+    final textChanged = newText != widget.diary.diaryText;
+
+    if (!titleChanged && !textChanged) {
       Navigator.pop(context);
       return;
     }
 
-    final success = await diaryService.updateDiary(
+    final diaryService = context.read<DiaryService>();
+
+    final success = await diaryService.reanalyzeAndUpdate(
       id: widget.diary.id,
-      title: widget.diary.title,
-      diaryText: newText,
+      title: newTitle,
+      newDiaryText: newText,
+      oldDiaryText: widget.diary.diaryText,
     );
 
     if (!mounted) return;
@@ -59,7 +77,7 @@ class _EditDiaryScreenState extends State<EditDiaryScreen> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Diary berhasil diperbarui'),
+          content: Text('Diary diperbarui ✓'),
           backgroundColor: AppTheme.successColor,
           behavior: SnackBarBehavior.floating,
         ),
@@ -68,7 +86,8 @@ class _EditDiaryScreenState extends State<EditDiaryScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(diaryService.errorMessage ?? 'Gagal update'),
+          content: Text(
+              diaryService.errorMessage ?? 'Gagal memperbarui diary'),
           backgroundColor: AppTheme.errorColor,
           behavior: SnackBarBehavior.floating,
         ),
@@ -78,153 +97,101 @@ class _EditDiaryScreenState extends State<EditDiaryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final diaryService = context.watch<DiaryService>();
-    final diary = widget.diary;
+    final isLoading = context.watch<DiaryService>().isSaving;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Edit Diary'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          if (isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            )
+          else
+            TextButton(
+              onPressed: _handleSave,
+              child: const Text(
+                'Simpan',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      _MoodBadge(mood: diary.mood),
-                      const Spacer(),
-                      Text(
-                        DateFormat('dd MMM yyyy').format(diary.createdAt),
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _titleController,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
                 ),
-                const SizedBox(height: 20),
-
-                const Text(
-                  '📝 Edit isi diary',
-                  style: TextStyle(
-                    fontSize: 16,
+                decoration: const InputDecoration(
+                  hintText: 'Judul',
+                  hintStyle: TextStyle(
+                    fontSize: 24,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textSecondary,
                   ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  filled: false,
+                  contentPadding: EdgeInsets.zero,
                 ),
-                const SizedBox(height: 10),
-
-                TextFormField(
-                  controller: _textController,
-                  maxLines: 12,
-                  minLines: 8,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    hintText: 'Tulis perasaanmu di sini...',
-                    alignLabelWithHint: true,
-                  ),
-                  validator: _validateDiary,
+                textCapitalization: TextCapitalization.words,
+              ),
+              const Divider(height: 24, thickness: 1),
+              TextField(
+                controller: _textController,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: AppTheme.textPrimary,
+                  height: 1.6,
                 ),
-                const SizedBox(height: 12),
-
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppTheme.secondaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+                decoration: const InputDecoration(
+                  hintText: 'Tulis diarimu di sini...',
+                  hintStyle: TextStyle(
+                    fontSize: 16,
+                    color: AppTheme.textSecondary,
                   ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.info_outline,
-                          size: 18, color: Color(0xFFD68910)),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Mood lama tetap dipertahankan. Buat entri baru untuk analisis ulang.',
-                          style: TextStyle(
-                              fontSize: 12, color: Color(0xFF8B6F1A)),
-                        ),
-                      ),
-                    ],
-                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  filled: false,
+                  contentPadding: EdgeInsets.zero,
                 ),
-                const SizedBox(height: 28),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed:
-                        diaryService.isSaving ? null : _handleUpdate,
-                    icon: diaryService.isSaving
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        : const Icon(Icons.save_outlined, size: 20),
-                    label: Text(diaryService.isSaving ? '' : 'Update'),
-                  ),
-                ),
-              ],
-            ),
+                maxLines: null,
+                minLines: 20,
+                keyboardType: TextInputType.multiline,
+                textCapitalization: TextCapitalization.sentences,
+              ),
+            ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// Badge kecil untuk menampilkan mood dengan emoji + warna.
-class _MoodBadge extends StatelessWidget {
-  final String mood;
-
-  const _MoodBadge({required this.mood});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = AppTheme.moodColor(mood);
-    final emoji = AppTheme.moodEmoji(mood);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 6),
-          Text(
-            mood,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-        ],
       ),
     );
   }

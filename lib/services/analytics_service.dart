@@ -172,4 +172,26 @@ class AnalyticsService {
 
     return buckets;
   }
+
+  /// 4 bucket (lama → baru), masing-masing 7 hari, covering 28 hari terakhir.
+  /// Index 3 = minggu ini.
+  List<int> diariesPerWeekLastMonth(List<DiaryEntry> diaries) {
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final buckets = List<int>.filled(4, 0);
+
+    for (final d in diaries) {
+      final date = DateTime(
+        d.createdAt.year,
+        d.createdAt.month,
+        d.createdAt.day,
+      );
+      final diff = todayDate.difference(date).inDays;
+      if (diff >= 0 && diff < 28) {
+        buckets[3 - (diff ~/ 7)] += 1;
+      }
+    }
+
+    return buckets;
+  }
 }

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/app_theme.dart';
 import '../../services/diary_service.dart';
+import '../home/main_navigation_screen.dart';
 import 'diary_list_screen.dart';
 
 // Screen yang menampilkan hasil analisis mood terakhir.
@@ -46,14 +47,14 @@ class ResultScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      moodColor.withOpacity(0.25),
-                      moodColor.withOpacity(0.05),
+                      moodColor.withValues(alpha:0.25),
+                      moodColor.withValues(alpha:0.05),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: moodColor.withOpacity(0.4)),
+                  border: Border.all(color: moodColor.withValues(alpha:0.4)),
                 ),
                 child: Column(
                   children: [
@@ -185,14 +186,14 @@ class ResultScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        moodColor.withOpacity(0.18),
-                        moodColor.withOpacity(0.04),
+                        moodColor.withValues(alpha:0.18),
+                        moodColor.withValues(alpha:0.04),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: moodColor.withOpacity(0.35)),
+                    border: Border.all(color: moodColor.withValues(alpha:0.35)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,16 +226,16 @@ class ResultScreen extends StatelessWidget {
                     backgroundColor: AppTheme.successColor,
                   ),
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Diary sudah tersimpan ke history'),
-                        backgroundColor: AppTheme.successColor,
-                        behavior: SnackBarBehavior.floating,
-                      ),
+                    context.read<DiaryService>().clearLastResult();
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const MainNavigationScreen()),
+                      (route) => false,
                     );
                   },
-                  icon: const Icon(Icons.check_circle_outline_rounded),
-                  label: const Text('Save'),
+                  icon: const Icon(Icons.home_rounded),
+                  label: const Text('Kembali ke Beranda'),
                 ),
               ),
               const SizedBox(height: 12),
@@ -283,9 +284,9 @@ class _MoodBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha:0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha:0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

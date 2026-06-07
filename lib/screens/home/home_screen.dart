@@ -10,6 +10,7 @@ import '../../services/diary_service.dart';
 import '../../services/firebase_auth_service.dart';
 import '../auth/login_screen.dart';
 import '../diary/diary_list_screen.dart';
+import '../diary/edit_diary_screen.dart';
 import '../diary/write_diary_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -36,14 +37,10 @@ class HomeScreen extends StatelessWidget {
 
     if (confirm == true && context.mounted) {
       await context.read<AuthService>().logout();
-
       if (!context.mounted) return;
-
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => const LoginScreen(),
-        ),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
         (route) => false,
       );
     }
@@ -64,9 +61,7 @@ class HomeScreen extends StatelessWidget {
     final analytics = AnalyticsService();
 
     final displayName =
-        currentUser?.displayName ??
-        currentUser?.email ??
-        'Sahabat';
+        currentUser?.displayName ?? currentUser?.email ?? 'Sahabat';
 
     if (currentUser == null) {
       return const Scaffold(
@@ -78,10 +73,23 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Mood Diary'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            tooltip: 'Logout',
-            onPressed: () => _handleLogout(context),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (value) {
+              if (value == 'logout') _handleLogout(context);
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout_rounded, size: 18),
+                    SizedBox(width: 10),
+                    Text('Keluar'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -93,11 +101,7 @@ class HomeScreen extends StatelessWidget {
             final isLoading =
                 snapshot.connectionState == ConnectionState.waiting;
 
-            final weekDiaries = analytics.filterByDays(diaries, 7);
-
-            final lastDiary = diaries.isNotEmpty ? diaries.first : null;
             final totalDiary = diaries.length;
-            final dominantMood = analytics.dominantMood(weekDiaries);
             final streak = analytics.calculateStreak(diaries);
 
             return SingleChildScrollView(
@@ -110,9 +114,20 @@ class HomeScreen extends StatelessWidget {
                     name: displayName,
                   ),
 
+                  const SizedBox(height: 16),
+
+                  _TodayStatusCard(
+                    diaries: diaries,
+                    isLoading: isLoading,
+                    onWrite: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const WriteDiaryScreen()),
+                    ),
+                  ),
+
                   const SizedBox(height: 20),
 
-                  // Quick stats grid
                   Row(
                     children: [
                       Expanded(
@@ -129,7 +144,8 @@ class HomeScreen extends StatelessWidget {
                         child: _StatCard(
                           title: 'Streak',
                           value: isLoading ? '...' : '$streak',
-                          subtitle: streak <= 1 ? 'Hari' : 'Hari berturut',
+                          subtitle:
+                              streak <= 1 ? 'Hari' : 'Hari berturut',
                           icon: Icons.local_fire_department_rounded,
                           color: const Color(0xFFFF7043),
                         ),
@@ -137,40 +153,12 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ),
 
-                  const SizedBox(height: 20),
-
-                  // Mood Terakhir
-                  _SectionTitle(
-                    icon: Icons.favorite_rounded,
-                    text: 'Mood Terakhir',
-                  ),
-                  const SizedBox(height: 10),
-                  _LastMoodCard(
-                    diary: lastDiary,
-                    isLoading: isLoading,
-                  ),
-
                   const SizedBox(height: 24),
 
-                  // Dominant mood (7 hari)
-                  _SectionTitle(
-                    icon: Icons.insights_rounded,
-                    text: 'Dominant Mood (7 hari)',
-                  ),
-                  const SizedBox(height: 10),
-                  _DominantMoodCard(
-                    mood: dominantMood,
-                    totalThisWeek: weekDiaries.length,
-                    isLoading: isLoading,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Diary terbaru
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _SectionTitle(
+                      const _SectionTitle(
                         icon: Icons.history_rounded,
                         text: 'Diary Terbaru',
                       ),
@@ -186,10 +174,12 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
+
                   if (isLoading)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(child: CircularProgressIndicator()),
+                      child:
+                          Center(child: CircularProgressIndicator()),
                     )
                   else if (diaries.isEmpty)
                     _EmptyRecent(
@@ -206,7 +196,8 @@ class HomeScreen extends StatelessWidget {
                           .take(3)
                           .map(
                             (d) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
+                              padding:
+                                  const EdgeInsets.only(bottom: 10),
                               child: _RecentDiaryTile(diary: d),
                             ),
                           )
@@ -214,21 +205,6 @@ class HomeScreen extends StatelessWidget {
                     ),
 
                   const SizedBox(height: 20),
-
-                  // CTA Tulis diary baru
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const WriteDiaryScreen(),
-                        ),
-                      ),
-                      icon: const Icon(Icons.edit_note_rounded),
-                      label: const Text('Tulis Diary Baru'),
-                    ),
-                  ),
                 ],
               ),
             );
@@ -246,24 +222,19 @@ class _GreetingCard extends StatelessWidget {
   final String greeting;
   final String name;
 
-  const _GreetingCard({
-    required this.greeting,
-    required this.name,
-  });
+  const _GreetingCard({required this.greeting, required this.name});
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('EEEE, dd MMMM yyyy').format(DateTime.now());
+    final dateStr =
+        DateFormat('EEEE, dd MMMM yyyy').format(DateTime.now());
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            AppTheme.primaryColor,
-            Color(0xFF06B6D4),
-          ],
+          colors: [AppTheme.primaryColor, Color(0xFF06B6D4)],
         ),
         borderRadius: BorderRadius.circular(20),
       ),
@@ -272,10 +243,7 @@ class _GreetingCard extends StatelessWidget {
         children: [
           Text(
             dateStr,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white70, fontSize: 12),
           ),
           const SizedBox(height: 6),
           Text(
@@ -288,12 +256,173 @@ class _GreetingCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Bagaimana perasaanmu hari ini? Tulis diary singkat untuk merefleksikan harimu.',
-            style: TextStyle(
-              color: Colors.white70,
-              height: 1.4,
+            'Bagaimana perasaanmu hari ini?',
+            style: TextStyle(color: Colors.white70, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =====================================================
+// STATUS HARI INI
+// =====================================================
+class _TodayStatusCard extends StatelessWidget {
+  final List<DiaryEntry> diaries;
+  final bool isLoading;
+  final VoidCallback onWrite;
+
+  const _TodayStatusCard({
+    required this.diaries,
+    required this.isLoading,
+    required this.onWrite,
+  });
+
+  static const _prompts = [
+    'Apa yang membuatmu bahagia hari ini?',
+    'Ceritakan 1 hal yang kamu syukuri',
+    'Bagaimana progres targetmu minggu ini?',
+    'Apa yang kamu pelajari hari ini?',
+    'Ceritakan momen favoritmu hari ini',
+    'Apa yang ingin kamu ingat dari hari ini?',
+    'Refleksikan harimu dalam beberapa kalimat',
+  ];
+
+  DiaryEntry? _todayDiary() {
+    final today = DateTime.now();
+    for (final d in diaries) {
+      if (d.createdAt.year == today.year &&
+          d.createdAt.month == today.month &&
+          d.createdAt.day == today.day) {
+        return d;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const _Placeholder(height: 90, text: 'Memuat...');
+    }
+
+    final todayDiary = _todayDiary();
+
+    if (todayDiary != null) {
+      final emoji = AppTheme.moodEmoji(todayDiary.mood);
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.successColor.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+              color: AppTheme.successColor.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppTheme.successColor.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Center(
+                child: Icon(Icons.check_rounded,
+                    color: AppTheme.successColor, size: 26),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Sudah nulis hari ini!',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '$emoji ${todayDiary.mood}  •  ${todayDiary.title}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final prompt =
+        _prompts[DateTime.now().weekday % _prompts.length];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+            color: AppTheme.primaryColor.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Belum nulis hari ini',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  prompt,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: onWrite,
+                  icon: const Icon(Icons.edit_note_rounded, size: 18),
+                  label: const Text('Tulis Sekarang'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    side: const BorderSide(color: AppTheme.primaryColor),
+                    foregroundColor: AppTheme.primaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    textStyle: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
             ),
           ),
+          const SizedBox(width: 12),
+          const Text('✏️', style: TextStyle(fontSize: 36)),
         ],
       ),
     );
@@ -329,7 +458,7 @@ class _SectionTitle extends StatelessWidget {
 }
 
 // =====================================================
-// STAT CARD (kecil, untuk grid)
+// STAT CARD
 // =====================================================
 class _StatCard extends StatelessWidget {
   final String title;
@@ -361,7 +490,7 @@ class _StatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 20),
@@ -370,9 +499,7 @@ class _StatCard extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              fontSize: 12,
-              color: AppTheme.textSecondary,
-            ),
+                fontSize: 12, color: AppTheme.textSecondary),
           ),
           const SizedBox(height: 4),
           Text(
@@ -386,9 +513,7 @@ class _StatCard extends StatelessWidget {
           Text(
             subtitle,
             style: const TextStyle(
-              fontSize: 11,
-              color: AppTheme.textSecondary,
-            ),
+                fontSize: 11, color: AppTheme.textSecondary),
           ),
         ],
       ),
@@ -397,268 +522,105 @@ class _StatCard extends StatelessWidget {
 }
 
 // =====================================================
-// LAST MOOD CARD
-// =====================================================
-class _LastMoodCard extends StatelessWidget {
-  final DiaryEntry? diary;
-  final bool isLoading;
-
-  const _LastMoodCard({required this.diary, required this.isLoading});
-
-  @override
-  Widget build(BuildContext context) {
-    if (isLoading) {
-      return _Placeholder(
-        height: 96,
-        text: 'Memuat mood terakhir...',
-      );
-    }
-
-    if (diary == null) {
-      return _Placeholder(
-        height: 96,
-        text: 'Belum ada diary. Yuk mulai menulis!',
-      );
-    }
-
-    final color = AppTheme.moodColor(diary!.mood);
-    final emoji = AppTheme.moodEmoji(diary!.mood);
-    final confidence = (diary!.confidence * 100).toStringAsFixed(0);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color.withOpacity(0.18),
-            color.withOpacity(0.04),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withOpacity(0.35)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(emoji, style: const TextStyle(fontSize: 30)),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  diary!.mood,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  DateFormat('dd MMM yyyy • HH:mm').format(diary!.createdAt),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Confidence $confidence%',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// =====================================================
-// DOMINANT MOOD CARD
-// =====================================================
-class _DominantMoodCard extends StatelessWidget {
-  final String mood;
-  final int totalThisWeek;
-  final bool isLoading;
-
-  const _DominantMoodCard({
-    required this.mood,
-    required this.totalThisWeek,
-    required this.isLoading,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (isLoading) {
-      return _Placeholder(height: 80, text: 'Menganalisis...');
-    }
-
-    if (totalThisWeek == 0) {
-      return _Placeholder(
-        height: 80,
-        text: 'Belum ada diary dalam 7 hari terakhir.',
-      );
-    }
-
-    final color = AppTheme.moodColor(mood);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Text(
-            AppTheme.moodEmoji(mood),
-            style: const TextStyle(fontSize: 32),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  mood,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Berdasarkan $totalThisWeek diary minggu ini',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withOpacity(0.35)),
-            ),
-            child: const Text(
-              'Dominan',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// =====================================================
-// RECENT DIARY TILE
+// RECENT DIARY TILE — tappable, preview text
 // =====================================================
 class _RecentDiaryTile extends StatelessWidget {
   final DiaryEntry diary;
 
   const _RecentDiaryTile({required this.diary});
 
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final dateOnly = DateTime(date.year, date.month, date.day);
+
+    if (dateOnly == today) return 'Hari ini';
+    if (dateOnly == yesterday) return 'Kemarin';
+    if (date.year == now.year) return DateFormat('d MMM').format(date);
+    return DateFormat('d MMM yy').format(date);
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = AppTheme.moodColor(diary.mood);
 
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
+    return InkWell(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => EditDiaryScreen(diary: diary)),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                AppTheme.moodEmoji(diary.mood),
-                style: const TextStyle(fontSize: 22),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  AppTheme.moodEmoji(diary.mood),
+                  style: const TextStyle(fontSize: 20),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  diary.title.isEmpty ? diary.mood : diary.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    diary.title.isEmpty ? '(Tanpa judul)' : diary.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  DateFormat('dd MMM • HH:mm').format(diary.createdAt),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppTheme.textSecondary,
+                  const SizedBox(height: 3),
+                  Text(
+                    diary.diaryText,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Text(
-            diary.mood,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: color,
+            const SizedBox(width: 8),
+            Text(
+              _formatDate(diary.createdAt),
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppTheme.textSecondary,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 // =====================================================
-// EMPTY STATE - RECENT
+// EMPTY STATE
 // =====================================================
 class _EmptyRecent extends StatelessWidget {
   final VoidCallback onWrite;
@@ -689,7 +651,8 @@ class _EmptyRecent extends StatelessWidget {
           const SizedBox(height: 4),
           const Text(
             'Yuk tulis diary pertamamu sekarang.',
-            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+            style: TextStyle(
+                color: AppTheme.textSecondary, fontSize: 12),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
@@ -726,9 +689,7 @@ class _Placeholder extends StatelessWidget {
       child: Center(
         child: Text(
           text,
-          style: const TextStyle(
-            color: AppTheme.textSecondary,
-          ),
+          style: const TextStyle(color: AppTheme.textSecondary),
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart' hide ChatSession;
 
+import '../config/secrets.dart';
 import '../models/chat_message.dart';
 import '../models/chat_session.dart';
 import 'firestore_service.dart';
@@ -10,7 +11,6 @@ class ChatService extends ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirestoreService _firestoreService = FirestoreService();
 
-  static const String _geminiApiKey = 'Your API Key';
   static const String _modelName = 'gemini-2.5-flash';
 
   bool _isLoading = false;
@@ -25,7 +25,7 @@ class ChatService extends ChangeNotifier {
 
   late final GenerativeModel _model = GenerativeModel(
     model: _modelName,
-    apiKey: _geminiApiKey,
+    apiKey: Secrets.geminiApiKey,
     generationConfig: GenerationConfig(temperature: 0.8),
     systemInstruction: Content.system(_systemPrompt),
   );
