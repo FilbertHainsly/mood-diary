@@ -7,7 +7,9 @@ Aplikasi Flutter untuk mencatat diary harian sekaligus memprediksi mood pengguna
 - **Diary** — tulis, edit, dan hapus catatan harian dengan tampilan seperti aplikasi Notes
 - **Analisis Mood Otomatis** — setiap diary dianalisis oleh Gemini AI untuk mendeteksi mood (positive, stable, anxious, stressed, depressed)
 - **Statistik** — grafik tren harian/mingguan, distribusi mood, streak menulis, dan hari aktif
+- **Rekomendasi Mood AI** — saran berbasis Gemini AI yang muncul pada kartu mood dominan untuk membantu pengguna merespons kondisi emosionalnya
 - **Chat AI** — chatbot berbasis Gemini untuk bercerita dan mendapatkan respons empatik
+- **Diary Reminder** — dialog pengingat untuk menulis diary yang muncul setelah login
 - **Autentikasi** — login dan registrasi dengan Firebase Email/Password
 
 ## Struktur Project
