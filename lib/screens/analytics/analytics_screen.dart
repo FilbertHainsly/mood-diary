@@ -7,6 +7,7 @@ import '../../models/diary_entry.dart';
 import '../../services/analytics_service.dart';
 import '../../services/diary_service.dart';
 import '../../services/firebase_auth_service.dart';
+import '../../services/mood_recommendation_service.dart';
 
 enum _Period { week, month, all }
 
@@ -398,21 +399,55 @@ class _SmallStat extends StatelessWidget {
 // =====================================================
 // DOMINANT MOOD CARD
 // =====================================================
-class _DominantMoodCard extends StatelessWidget {
+class _DominantMoodCard extends StatefulWidget {
   final String mood;
   final int total;
 
   const _DominantMoodCard({required this.mood, required this.total});
 
   @override
+  State<_DominantMoodCard> createState() => _DominantMoodCardState();
+}
+
+class _DominantMoodCardState extends State<_DominantMoodCard> {
+  final _recService = MoodRecommendationService();
+
+  late Future<List<String>> _tipsFuture;
+  String? _loadedForMood;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTipsIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DominantMoodCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mood != widget.mood || oldWidget.total != widget.total) {
+      _loadTipsIfNeeded();
+    }
+  }
+
+  void _loadTipsIfNeeded() {
+    if (widget.total == 0) {
+      _loadedForMood = null;
+      return;
+    }
+    if (_loadedForMood == widget.mood) return;
+    _loadedForMood = widget.mood;
+    _tipsFuture = _recService.getRecommendations(widget.mood);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (total == 0) {
+    if (widget.total == 0) {
       return const _EmptyBox(
         text: 'Belum ada diary pada periode ini.',
       );
     }
 
-    final color = AppTheme.moodColor(mood);
+    final color = AppTheme.moodColor(widget.mood);
 
     return Container(
       width: double.infinity,
@@ -420,54 +455,156 @@ class _DominantMoodCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            color.withValues(alpha:0.20),
-            color.withValues(alpha:0.05),
+            color.withValues(alpha: 0.20),
+            color.withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withValues(alpha:0.35)),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                AppTheme.moodEmoji(mood),
-                style: const TextStyle(fontSize: 32),
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  mood,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.textPrimary,
+          Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    AppTheme.moodEmoji(widget.mood),
+                    style: const TextStyle(fontSize: 32),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Mood paling sering muncul dari $total diary',
-                  style: const TextStyle(
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.mood,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Mood paling sering muncul dari ${widget.total} diary',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            height: 1,
+            color: color.withValues(alpha: 0.20),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome_rounded,
+                size: 16,
+                color: color,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Rekomendasi untukmu',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          FutureBuilder<List<String>>(
+            future: _tipsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Row(
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Menyusun rekomendasi...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              final tips = snapshot.data ?? const <String>[];
+              if (tips.isEmpty) {
+                return const Text(
+                  'Belum ada rekomendasi tersedia.',
+                  style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.textSecondary,
                   ),
-                ),
-              ],
-            ),
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: tips
+                    .map((t) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.only(top: 6),
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  t,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    height: 1.4,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ))
+                    .toList(),
+              );
+            },
           ),
         ],
       ),
