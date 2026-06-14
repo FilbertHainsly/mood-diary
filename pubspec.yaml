@@ -13,9 +13,9 @@ dependencies:
   cupertino_icons: ^1.0.6
 
   # Firebase
-  firebase_core: ^2.27.0
-  firebase_auth: ^4.17.8
-  cloud_firestore: ^4.15.8
+  firebase_core: ^3.0.0
+  firebase_auth: ^5.0.0
+  cloud_firestore: ^5.0.0
 
   # State Management
   provider: ^6.1.2
@@ -25,6 +25,10 @@ dependencies:
 
   # AI - Gemini
   google_generative_ai: ^0.4.6
+
+  # Speech & Microphone
+  speech_to_text: ^7.0.0
+  permission_handler: ^11.3.1
 
   # Utilities
   intl: ^0.19.0

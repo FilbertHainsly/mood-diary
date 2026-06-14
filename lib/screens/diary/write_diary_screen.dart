@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/app_theme.dart';
 import '../../services/diary_service.dart';
 import '../../services/firebase_auth_service.dart';
+import '../../services/speech_service.dart';
 
 class WriteDiaryScreen extends StatefulWidget {
   const WriteDiaryScreen({super.key});
@@ -13,15 +15,113 @@ class WriteDiaryScreen extends StatefulWidget {
   State<WriteDiaryScreen> createState() => _WriteDiaryScreenState();
 }
 
-class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
+class _WriteDiaryScreenState extends State<WriteDiaryScreen>
+    with WidgetsBindingObserver {
   final _titleController = TextEditingController();
   final _diaryController = TextEditingController();
+  final SpeechService _speechService = SpeechService();
+  bool _isListening = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initSpeech();
+  }
+
+  Future<void> _initSpeech() async {
+    await _speechService.initialize();
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if ((state == AppLifecycleState.paused ||
+            state == AppLifecycleState.detached) &&
+        _isListening) {
+      _speechService.stopListening();
+      if (mounted) setState(() => _isListening = false);
+    }
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _speechService.stopListening();
+    _speechService.dispose();
     _titleController.dispose();
     _diaryController.dispose();
     super.dispose();
+  }
+
+  Future<void> _toggleMic() async {
+    if (_isListening) {
+      await _speechService.stopListening();
+      setState(() => _isListening = false);
+      return;
+    }
+
+    try {
+      setState(() => _isListening = true);
+      await _speechService.startListening(
+        onResult: (words) {
+          if (!mounted) return;
+          if (words.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Suara tidak terdeteksi, coba lagi'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
+          final current = _diaryController.text;
+          final separator =
+              current.isEmpty || current.endsWith(' ') ? '' : ' ';
+          _diaryController.text = '$current$separator$words';
+          _diaryController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _diaryController.text.length),
+          );
+        },
+        onListeningStop: () {
+          if (mounted) setState(() => _isListening = false);
+        },
+        onError: (error) {
+          if (!mounted) return;
+          setState(() => _isListening = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+      );
+    } on String {
+      if (!mounted) return;
+      setState(() => _isListening = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Izin mikrofon ditolak'),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Buka Pengaturan',
+            onPressed: () => openAppSettings(),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isListening = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _handleSave() async {
@@ -86,6 +186,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
     final isLoading = context.watch<DiaryService>().isAnalyzing;
     final dateStr =
         DateFormat('EEEE, dd MMM yyyy').format(DateTime.now());
+    final isMicAvailable = _speechService.isAvailable;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -121,13 +222,15 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
             )
           else
             TextButton(
-              onPressed: _handleSave,
-              child: const Text(
+              onPressed: _isListening ? null : _handleSave,
+              child: Text(
                 'Simpan',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.primaryColor,
+                  color: _isListening
+                      ? AppTheme.textSecondary
+                      : AppTheme.primaryColor,
                 ),
               ),
             ),
@@ -162,30 +265,90 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen> {
                 textCapitalization: TextCapitalization.words,
               ),
               const Divider(height: 24, thickness: 1),
-              TextField(
-                controller: _diaryController,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: AppTheme.textPrimary,
-                  height: 1.6,
-                ),
-                decoration: const InputDecoration(
-                  hintText: 'Tulis diarimu di sini...',
-                  hintStyle: TextStyle(
-                    fontSize: 16,
-                    color: AppTheme.textSecondary,
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  TextField(
+                    controller: _diaryController,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: AppTheme.textPrimary,
+                      height: 1.6,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: 'Tulis diarimu di sini...',
+                      hintStyle: TextStyle(
+                        fontSize: 16,
+                        color: AppTheme.textSecondary,
+                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      filled: false,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    maxLines: null,
+                    minLines: 20,
+                    keyboardType: TextInputType.multiline,
+                    textCapitalization: TextCapitalization.sentences,
                   ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  filled: false,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                maxLines: null,
-                minLines: 20,
-                keyboardType: TextInputType.multiline,
-                textCapitalization: TextCapitalization.sentences,
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Tooltip(
+                      message: isMicAvailable
+                          ? ''
+                          : 'Speech-to-text tidak tersedia di perangkat ini',
+                      child: Opacity(
+                        opacity: isMicAvailable ? 1.0 : 0.3,
+                        child: GestureDetector(
+                          onTap: isMicAvailable ? _toggleMic : null,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: _isListening
+                                  ? Colors.red.withValues(alpha: 0.1)
+                                  : Colors.grey.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _isListening ? Icons.mic : Icons.mic_none,
+                              color: _isListening
+                                  ? Colors.red
+                                  : Colors.grey,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
+              if (_isListening)
+                const Padding(
+                  padding: EdgeInsets.only(top: 4, left: 4),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.red,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Sedang mendengarkan... Tap mic untuk berhenti',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
