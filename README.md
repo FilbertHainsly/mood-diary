@@ -5,6 +5,7 @@ Aplikasi Flutter untuk mencatat diary harian sekaligus memprediksi mood pengguna
 ## Fitur
 
 - **Diary** — tulis, edit, dan hapus catatan harian dengan tampilan seperti aplikasi Notes
+- **Speech-to-Text Diary** — input diary lewat suara (Bahasa Indonesia / locale sistem) untuk write maupun edit
 - **Analisis Mood Otomatis** — setiap diary dianalisis oleh Gemini AI untuk mendeteksi mood (positive, stable, anxious, stressed, depressed)
 - **Statistik** — grafik tren harian/mingguan, distribusi mood, streak menulis, dan hari aktif
 - **Rekomendasi Mood AI** — saran berbasis Gemini AI yang muncul pada kartu mood dominan untuk membantu pengguna merespons kondisi emosionalnya
@@ -39,6 +40,7 @@ lib/
 │   ├── diary/
 │   │   ├── diary_list_screen.dart
 │   │   ├── edit_diary_screen.dart
+│   │   ├── result_screen.dart
 │   │   └── write_diary_screen.dart
 │   └── home/
 │       ├── home_screen.dart
@@ -50,7 +52,9 @@ lib/
 │   ├── diary_service.dart
 │   ├── firebase_auth_service.dart
 │   ├── firestore_service.dart
-│   └── mood_api_service.dart
+│   ├── mood_api_service.dart
+│   ├── mood_recommendation_service.dart
+│   └── speech_service.dart
 ├── firebase_options.dart
 └── main.dart
 ```
@@ -67,7 +71,7 @@ lib/
 
 ```bash
 git clone <repo-url>
-cd fp_ppb
+cd mood_diary
 flutter pub get
 ```
 
@@ -102,7 +106,17 @@ class Secrets {
 
 > File `secrets.dart` sudah masuk `.gitignore` — tidak akan ter-commit ke repository.
 
-### 5. Jalankan App
+> Di Windows PowerShell gunakan `Copy-Item lib/config/secrets.example.dart lib/config/secrets.dart` (atau `copy` di cmd) sebagai pengganti `cp`.
+
+### 5. Permission Speech-to-Text
+
+Permission untuk fitur rekam suara sudah dikonfigurasi:
+- **Android** (`android/app/src/main/AndroidManifest.xml`) — `RECORD_AUDIO`, `INTERNET`, `POST_NOTIFICATIONS`
+- **iOS** (`ios/Runner/Info.plist`) — `NSMicrophoneUsageDescription` dan `NSSpeechRecognitionUsageDescription`
+
+Saat pertama kali menekan tombol mic, aplikasi akan meminta izin mikrofon ke user. Fitur ini membutuhkan koneksi internet karena memakai engine speech-to-text bawaan OS.
+
+### 6. Jalankan App
 
 ```bash
 flutter run
