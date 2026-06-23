@@ -21,6 +21,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen>
   final _diaryController = TextEditingController();
   final SpeechService _speechService = SpeechService();
   bool _isListening = false;
+  String _committedText = '';
 
   @override
   void initState() {
@@ -62,23 +63,22 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen>
     }
 
     try {
+      _committedText = _diaryController.text;
       setState(() => _isListening = true);
       await _speechService.startListening(
         onResult: (words) {
           if (!mounted) return;
-          if (words.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Suara tidak terdeteksi, coba lagi'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-            return;
-          }
-          final current = _diaryController.text;
-          final separator =
-              current.isEmpty || current.endsWith(' ') ? '' : ' ';
-          _diaryController.text = '$current$separator$words';
+          final sep = _committedText.isEmpty || _committedText.endsWith(' ') ? '' : ' ';
+          _committedText = '$_committedText$sep$words';
+          _diaryController.text = _committedText;
+          _diaryController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _committedText.length),
+          );
+        },
+        onPartialResult: (partial) {
+          if (!mounted || partial.isEmpty) return;
+          final sep = _committedText.isEmpty || _committedText.endsWith(' ') ? '' : ' ';
+          _diaryController.text = '$_committedText$sep$partial';
           _diaryController.selection = TextSelection.fromPosition(
             TextPosition(offset: _diaryController.text.length),
           );
@@ -88,6 +88,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen>
         },
         onError: (error) {
           if (!mounted) return;
+          _diaryController.text = _committedText;
           setState(() => _isListening = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -381,10 +382,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen>
                       SizedBox(width: 8),
                       Text(
                         'Sedang mendengarkan... Tap mic untuk berhenti',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.red,
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.red),
                       ),
                     ],
                   ),

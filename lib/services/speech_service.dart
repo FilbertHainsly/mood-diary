@@ -6,7 +6,9 @@ class SpeechService {
   final SpeechToText _speech = SpeechToText();
   bool _isAvailable = false;
   bool _isListening = false;
+
   Function(String)? _onErrorCallback;
+  Function()? _onListeningStopCallback;
 
   bool get isAvailable => _isAvailable;
   bool get isListening => _isListening;
@@ -14,22 +16,27 @@ class SpeechService {
   Future<bool> initialize() async {
     _isAvailable = await _speech.initialize(
       onError: (SpeechRecognitionError error) {
-        _isListening = false;
+        if (!_isListening) return;
         final msg = error.errorMsg;
+        // Silence / no-match errors are not fatal — library continues
+        if (msg == 'error_speech_timeout' || msg == 'error_no_match') return;
+        _isListening = false;
         if (msg.contains('network') || msg.contains('error_network')) {
-          _onErrorCallback?.call(
-            'Fitur rekam suara membutuhkan koneksi internet',
-          );
+          _onErrorCallback?.call('Fitur rekam suara membutuhkan koneksi internet');
         } else {
           _onErrorCallback?.call(msg);
         }
         _onErrorCallback = null;
+        _onListeningStopCallback = null;
       },
       onStatus: (String status) {
-        if (status == 'done' ||
-            status == 'notListening' ||
-            status == 'doneNoResult') {
+        // 'done' only fires when the whole session truly ends (not between
+        // internal restarts that speech_to_text handles automatically)
+        if (status == 'done' && _isListening) {
           _isListening = false;
+          _onListeningStopCallback?.call();
+          _onListeningStopCallback = null;
+          _onErrorCallback = null;
         }
       },
     );
@@ -40,6 +47,7 @@ class SpeechService {
     required Function(String words) onResult,
     required Function() onListeningStop,
     Function(String error)? onError,
+    Function(String partial)? onPartialResult,
   }) async {
     if (!_isAvailable || _isListening) return;
 
@@ -52,37 +60,33 @@ class SpeechService {
       onError?.call(error);
       onListeningStop();
     };
-
+    _onListeningStopCallback = onListeningStop;
     _isListening = true;
 
     String? localeId;
     try {
       final locales = await _speech.locales();
-      if (locales.any((l) => l.localeId == 'id_ID')) {
-        localeId = 'id_ID';
-      } else {
-        final systemLocale = await _speech.systemLocale();
-        localeId = systemLocale?.localeId;
-      }
-    } catch (_) {
-      localeId = null;
-    }
+      localeId = locales.any((l) => l.localeId == 'id_ID')
+          ? 'id_ID'
+          : (await _speech.systemLocale())?.localeId;
+    } catch (_) {}
 
     await _speech.listen(
       onResult: (result) {
         if (result.finalResult) {
-          _isListening = false;
-          _onErrorCallback = null;
-          onResult(result.recognizedWords);
-          onListeningStop();
+          if (result.recognizedWords.isNotEmpty) {
+            onResult(result.recognizedWords);
+          }
+        } else {
+          onPartialResult?.call(result.recognizedWords);
         }
       },
       listenOptions: SpeechListenOptions(
         localeId: localeId,
-        listenFor: const Duration(seconds: 60),
-        pauseFor: const Duration(seconds: 3),
-        partialResults: false,
-        cancelOnError: true,
+        listenFor: const Duration(seconds: 120),
+        pauseFor: const Duration(seconds: 5),
+        partialResults: true,
+        cancelOnError: false,
       ),
     );
   }
@@ -90,11 +94,14 @@ class SpeechService {
   Future<void> stopListening() async {
     _isListening = false;
     _onErrorCallback = null;
+    _onListeningStopCallback = null;
     await _speech.stop();
   }
 
   void dispose() {
+    _isListening = false;
     _onErrorCallback = null;
+    _onListeningStopCallback = null;
     _speech.cancel();
   }
 }
