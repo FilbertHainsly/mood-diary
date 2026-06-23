@@ -134,5 +134,5 @@ flutter run
 
 ## Class Diagram
 
-![Class Diagram](https://github.com/user-attachments/assets/edf24662-4429-4e53-998e-eddc7883626a)
+![Class Diagram](<img width="2091" height="1007" alt="Class-FP-PPB" src="https://github.com/user-attachments/assets/ac630778-4259-4dd2-91a5-034986870422" />)
 > ([Link Diagram](https://drive.google.com/file/d/1qaYikw3Q80jyeQ_0Wjic_2kIu9O03UhY/view))
