@@ -50,12 +50,23 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _scrollToBottom();
 
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    await context.read<ChatService>().sendMessage(
+    final success = await context.read<ChatService>().sendMessage(
           userId: uid,
           sessionId: widget.session.sessionId,
           content: text,
           relatedMood: widget.session.relatedMood,
         );
+
+    if (!mounted) return;
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal mengirim pesan. Coba lagi.'),
+          backgroundColor: AppTheme.errorColor,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override

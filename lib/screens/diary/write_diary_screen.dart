@@ -124,6 +124,40 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen>
     }
   }
 
+  Future<void> _confirmDiscard() async {
+    if (_isListening) {
+      await _speechService.stopListening();
+      if (mounted) setState(() => _isListening = false);
+    }
+    final hasContent = _titleController.text.isNotEmpty ||
+        _diaryController.text.isNotEmpty;
+    if (!hasContent) {
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+    if (!mounted) return;
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Keluar tanpa menyimpan?'),
+        content: const Text('Tulisanmu akan hilang jika keluar sekarang.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Lanjut Nulis'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+                foregroundColor: AppTheme.errorColor),
+            child: const Text('Keluar'),
+          ),
+        ],
+      ),
+    );
+    if ((leave ?? false) && mounted) Navigator.pop(context);
+  }
+
   Future<void> _handleSave() async {
     final title = _titleController.text.trim();
     final diaryText = _diaryController.text.trim();
@@ -185,10 +219,16 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen>
   Widget build(BuildContext context) {
     final isLoading = context.watch<DiaryService>().isAnalyzing;
     final dateStr =
-        DateFormat('EEEE, dd MMM yyyy').format(DateTime.now());
+        DateFormat('EEEE, dd MMM yyyy', 'id').format(DateTime.now());
     final isMicAvailable = _speechService.isAvailable;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _confirmDiscard();
+      },
+      child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -196,7 +236,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen>
         scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _confirmDiscard,
         ),
         title: Text(
           dateStr,
@@ -353,6 +393,7 @@ class _WriteDiaryScreenState extends State<WriteDiaryScreen>
           ),
         ),
       ),
+    ),
     );
   }
 }

@@ -127,6 +127,42 @@ class _EditDiaryScreenState extends State<EditDiaryScreen>
     }
   }
 
+  bool get _hasUnsavedChanges =>
+      _titleController.text.trim() != widget.diary.title ||
+      _textController.text.trim() != widget.diary.diaryText;
+
+  Future<void> _confirmDiscard() async {
+    if (_isListening) {
+      await _speechService.stopListening();
+      if (mounted) setState(() => _isListening = false);
+    }
+    if (!_hasUnsavedChanges) {
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+    if (!mounted) return;
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Buang perubahan?'),
+        content: const Text('Perubahan yang belum disimpan akan hilang.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Lanjut Edit'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+                foregroundColor: AppTheme.errorColor),
+            child: const Text('Buang'),
+          ),
+        ],
+      ),
+    );
+    if ((leave ?? false) && mounted) Navigator.pop(context);
+  }
+
   Future<void> _handleSave() async {
     final newTitle = _titleController.text.trim();
     final newText = _textController.text.trim();
@@ -195,7 +231,13 @@ class _EditDiaryScreenState extends State<EditDiaryScreen>
     final isLoading = context.watch<DiaryService>().isSaving;
     final isMicAvailable = _speechService.isAvailable;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _confirmDiscard();
+      },
+      child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -203,7 +245,7 @@ class _EditDiaryScreenState extends State<EditDiaryScreen>
         scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pop(context),
+          onPressed: _confirmDiscard,
         ),
         actions: [
           if (isLoading)
@@ -351,6 +393,7 @@ class _EditDiaryScreenState extends State<EditDiaryScreen>
           ),
         ),
       ),
+    ),
     );
   }
 }

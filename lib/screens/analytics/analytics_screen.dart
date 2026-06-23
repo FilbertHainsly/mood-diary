@@ -137,10 +137,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       Expanded(
                         child: _SmallStat(
                           title: 'Streak',
-                          value: '$streak',
-                          subtitle: streak <= 1
-                              ? 'Hari'
-                              : 'Hari berturut',
+                          value: streak == 0 ? '-' : '$streak',
+                          subtitle: streak == 0
+                              ? 'Mulai tulis!'
+                              : streak == 1
+                                  ? 'Hari'
+                                  : 'Hari berturut',
                           icon: Icons.local_fire_department_rounded,
                           color: const Color(0xFFFF7043),
                         ),
@@ -884,7 +886,7 @@ class _TimelineCard extends StatelessWidget {
                             ),
                             const Spacer(),
                             Text(
-                              DateFormat('dd MMM • HH:mm')
+                              DateFormat('dd MMM • HH:mm', 'id')
                                   .format(diary.createdAt),
                               style: const TextStyle(
                                 fontSize: 11,

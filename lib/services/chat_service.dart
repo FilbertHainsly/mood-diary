@@ -84,7 +84,9 @@ Jika muncul tanda ini:
       final relatedMood = latestDiary?.mood ?? 'stable';
 
       final now = DateTime.now();
-      final title = 'Chat ${now.day}/${now.month}/${now.year}';
+      final h = now.hour.toString().padLeft(2, '0');
+      final m = now.minute.toString().padLeft(2, '0');
+      final title = 'Chat ${now.day}/${now.month} $h:$m';
 
       final docRef = await _chatsRef.add({
         'userId': userId,

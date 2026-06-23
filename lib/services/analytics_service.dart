@@ -21,9 +21,11 @@ class AnalyticsService {
     List<DiaryEntry> diaries,
     int days,
   ) {
-    final cutoff = DateTime.now().subtract(Duration(days: days));
+    final now = DateTime.now();
+    final cutoff = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: days - 1));
     return diaries
-        .where((d) => d.createdAt.isAfter(cutoff))
+        .where((d) => !d.createdAt.isBefore(cutoff))
         .toList();
   }
 

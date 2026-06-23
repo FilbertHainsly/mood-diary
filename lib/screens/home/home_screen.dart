@@ -143,9 +143,16 @@ class HomeScreen extends StatelessWidget {
                       Expanded(
                         child: _StatCard(
                           title: 'Streak',
-                          value: isLoading ? '...' : '$streak',
-                          subtitle:
-                              streak <= 1 ? 'Hari' : 'Hari berturut',
+                          value: isLoading
+                              ? '...'
+                              : streak == 0
+                                  ? '-'
+                                  : '$streak',
+                          subtitle: streak == 0
+                              ? 'Mulai tulis!'
+                              : streak == 1
+                                  ? 'Hari'
+                                  : 'Hari berturut',
                           icon: Icons.local_fire_department_rounded,
                           color: const Color(0xFFFF7043),
                         ),
@@ -227,7 +234,7 @@ class _GreetingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateStr =
-        DateFormat('EEEE, dd MMMM yyyy').format(DateTime.now());
+        DateFormat('EEEE, dd MMMM yyyy', 'id').format(DateTime.now());
 
     return Container(
       width: double.infinity,
@@ -537,8 +544,8 @@ class _RecentDiaryTile extends StatelessWidget {
 
     if (dateOnly == today) return 'Hari ini';
     if (dateOnly == yesterday) return 'Kemarin';
-    if (date.year == now.year) return DateFormat('d MMM').format(date);
-    return DateFormat('d MMM yy').format(date);
+    if (date.year == now.year) return DateFormat('d MMM', 'id').format(date);
+    return DateFormat('d MMM yy', 'id').format(date);
   }
 
   @override

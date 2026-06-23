@@ -34,8 +34,8 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
 
     if (dateOnly == today) return 'Hari ini';
     if (dateOnly == yesterday) return 'Kemarin';
-    if (date.year == now.year) return DateFormat('d MMM').format(date);
-    return DateFormat('d MMM yyyy').format(date);
+    if (date.year == now.year) return DateFormat('d MMM', 'id').format(date);
+    return DateFormat('d MMM yyyy', 'id').format(date);
   }
 
   Future<void> _confirmDelete(
@@ -294,7 +294,7 @@ class _NoteCard extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
-                        diary.title,
+                        diary.title.isEmpty ? '(Tanpa judul)' : diary.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
