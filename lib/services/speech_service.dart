@@ -1,3 +1,4 @@
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -21,6 +22,9 @@ class SpeechService {
         // Silence / no-match errors are not fatal — library continues
         if (msg == 'error_speech_timeout' || msg == 'error_no_match') return;
         _isListening = false;
+        FirebaseCrashlytics.instance.recordError(
+          Exception(msg), null, fatal: false, reason: 'Speech recognition error',
+        );
         if (msg.contains('network') || msg.contains('error_network')) {
           _onErrorCallback?.call('Fitur rekam suara membutuhkan koneksi internet');
         } else {
@@ -51,6 +55,7 @@ class SpeechService {
   }) async {
     if (!_isAvailable || _isListening) return;
 
+    FirebaseCrashlytics.instance.log('User memulai speech-to-text');
     final status = await Permission.microphone.request();
     if (status != PermissionStatus.granted) {
       throw 'Izin mikrofon diperlukan untuk fitur ini';

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart' hide ChatSession;
 
@@ -194,6 +195,8 @@ Jika muncul tanda ini:
     try {
       final msgsRef = _chatsRef.doc(sessionId).collection('messages');
 
+      FirebaseCrashlytics.instance.log('User mengirim pesan ke sesi $sessionId');
+
       // Ambil history sebelum menambah pesan baru
       final historySnap = await msgsRef
           .orderBy('timestamp', descending: true)
@@ -303,7 +306,8 @@ Pesan user sekarang: $userMessage
 ''';
 
       return await _callGeminiWithRetry(prompt, currentMood);
-    } catch (e) {
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(e, stack, fatal: false, reason: 'Gemini response failed');
       debugPrint('[ChatService] Gemini error: $e');
       return _fallbackResponse(relatedMood);
     }

@@ -12,6 +12,7 @@ Aplikasi Flutter untuk mencatat diary harian sekaligus memprediksi mood pengguna
 - **Chat AI** — chatbot berbasis Gemini untuk bercerita dan mendapatkan respons empatik
 - **Diary Reminder** — dialog pengingat untuk menulis diary yang muncul setelah login
 - **Autentikasi** — login dan registrasi dengan Firebase Email/Password
+- **Crash Monitoring** — Firebase Crashlytics untuk memantau crash dan error secara real-time, termasuk non-fatal error dari Gemini AI dan Speech-to-Text
 
 ## Struktur Project
 
@@ -116,7 +117,16 @@ Permission untuk fitur rekam suara sudah dikonfigurasi:
 
 Saat pertama kali menekan tombol mic, aplikasi akan meminta izin mikrofon ke user. Fitur ini membutuhkan koneksi internet karena memakai engine speech-to-text bawaan OS.
 
-### 6. Jalankan App
+### 6. Aktifkan Firebase Crashlytics
+
+Di [Firebase Console](https://console.firebase.google.com):
+1. Pilih project → **Crashlytics** (sidebar Release & Monitor)
+2. Klik **Enable Crashlytics**
+3. Jalankan app sekali agar laporan pertama terkirim
+
+Crashlytics akan otomatis menangkap crash, non-fatal error dari Gemini AI dan Speech-to-Text, serta mencatat aktivitas user sebelum crash terjadi.
+
+### 7. Jalankan App
 
 ```bash
 flutter run
