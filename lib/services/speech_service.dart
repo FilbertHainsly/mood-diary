@@ -7,13 +7,8 @@ class SpeechService {
   final SpeechToText _speech = SpeechToText();
   bool _isAvailable = false;
   bool _isListening = false;
-  // True only when the user explicitly stops (taps the mic) or a fatal error
-  // occurs. Used to decide whether an OS-triggered stop should auto-restart.
   bool _manualStop = false;
 
-  // Stored so a session can be transparently restarted across the OS
-  // recognizer's internal stops (e.g. after a pause) without the caller
-  // noticing — keeps the diary from being cut off mid-sentence.
   Function(String words)? _onResultCallback;
   Function(String partial)? _onPartialResultCallback;
   Function(String)? _onErrorCallback;
@@ -28,10 +23,7 @@ class SpeechService {
       onError: (SpeechRecognitionError error) {
         if (!_isListening) return;
         final msg = error.errorMsg;
-        // Silence / no-match errors are not fatal: keep the session "alive"
-        // and let the onStatus 'done' callback restart it automatically.
         if (msg == 'error_speech_timeout' || msg == 'error_no_match') return;
-        // A real error ends the session — block the auto-restart.
         _isListening = false;
         _manualStop = true;
         FirebaseCrashlytics.instance.recordError(
@@ -46,10 +38,7 @@ class SpeechService {
       },
       onStatus: (String status) {
         if (!_isListening) return;
-        // 'done' fires whenever the OS recognizer stops — which it does on its
-        // own after a short silence (pauseFor) or its internal time limit.
-        // Unless the user manually stopped, restart so listening is continuous
-        // and the user keeps control until they tap the mic again.
+        
         if (status == 'done') {
           if (_manualStop) {
             _isListening = false;
@@ -99,8 +88,6 @@ class SpeechService {
     await _listen();
   }
 
-  /// Starts one underlying recognizer session. Called for the initial start
-  /// and for every automatic restart.
   Future<void> _listen() async {
     await _speech.listen(
       onResult: (result) {
@@ -114,10 +101,8 @@ class SpeechService {
       },
       listenOptions: SpeechListenOptions(
         localeId: _localeId,
-        // Per-session time limit. When it elapses the session restarts, so it
-        // is just a ceiling for a single OS recognizer call, not for the user.
         listenFor: const Duration(seconds: 120),
-        // Tolerate a few seconds of silence before the OS finalizes a chunk.
+        
         pauseFor: const Duration(seconds: 5),
         partialResults: true,
         cancelOnError: false,
@@ -125,11 +110,8 @@ class SpeechService {
     );
   }
 
-  /// Restarts listening after the OS recognizer stops on its own, unless the
-  /// user has meanwhile asked to stop.
   Future<void> _restartListening() async {
-    // Let the platform fully release the previous session before starting a
-    // new one, otherwise Android can reject the restart as "already started".
+  
     await Future.delayed(const Duration(milliseconds: 50));
     if (!_isListening || _manualStop || _speech.isListening) return;
     try {
